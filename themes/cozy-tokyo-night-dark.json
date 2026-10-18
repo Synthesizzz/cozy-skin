@@ -1,0 +1,14 @@
+{
+  "name": "Cozy Tokyo Night Dark",
+  "base": "dark",
+  "overrides": {
+    "text": "#c0caf5",
+    "subtle": "#a9b1d6",
+    "inactive": "#a9b1d6",
+    "claude": "#7aa2f7",
+    "success": "#9ece6a",
+    "error": "#f7768e",
+    "warning": "#e0af68",
+    "promptBorder": "#7aa2f7"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "Cozy Nord Light",
+  "base": "light",
+  "overrides": {
+    "text": "#2e3440",
+    "subtle": "#4c566a",
+    "inactive": "#4c566a",
+    "claude": "#4f6c90",
+    "success": "#5f6e51",
+    "error": "#a05159",
+    "warning": "#756545",
+    "promptBorder": "#4f6c90"
+  }
+}

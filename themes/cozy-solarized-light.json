@@ -1,0 +1,14 @@
+{
+  "name": "Cozy Solarized Light",
+  "base": "light",
+  "overrides": {
+    "text": "#586e75",
+    "subtle": "#5d7179",
+    "inactive": "#5d7179",
+    "claude": "#1f72ac",
+    "success": "#687700",
+    "error": "#d3302d",
+    "warning": "#8a6800",
+    "promptBorder": "#1f72ac"
+  }
+}

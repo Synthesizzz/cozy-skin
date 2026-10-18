@@ -1,0 +1,14 @@
+{
+  "name": "Cozy Tokyo Night Light",
+  "base": "light",
+  "overrides": {
+    "text": "#365ebb",
+    "subtle": "#4c5279",
+    "inactive": "#4c5279",
+    "claude": "#2462b6",
+    "success": "#4f6933",
+    "error": "#ba204d",
+    "warning": "#785d35",
+    "promptBorder": "#2462b6"
+  }
+}

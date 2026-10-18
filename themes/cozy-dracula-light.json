@@ -1,0 +1,14 @@
+{
+  "name": "Cozy Dracula Light",
+  "base": "light",
+  "overrides": {
+    "text": "#1f1f1f",
+    "subtle": "#6c664b",
+    "inactive": "#6c664b",
+    "claude": "#644ac9",
+    "success": "#14710a",
+    "error": "#cb3a2a",
+    "warning": "#846e15",
+    "promptBorder": "#644ac9"
+  }
+}

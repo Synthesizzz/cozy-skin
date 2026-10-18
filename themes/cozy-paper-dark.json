@@ -1,0 +1,14 @@
+{
+  "name": "Cozy Paper Dark",
+  "base": "dark",
+  "overrides": {
+    "text": "#e8e8e6",
+    "subtle": "#ababa8",
+    "inactive": "#ababa8",
+    "claude": "#8ab4f8",
+    "success": "#81c995",
+    "error": "#f28b82",
+    "warning": "#fdd663",
+    "promptBorder": "#8ab4f8"
+  }
+}

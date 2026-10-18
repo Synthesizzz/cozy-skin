@@ -1,0 +1,14 @@
+{
+  "name": "Cozy Kindle Dark",
+  "base": "dark",
+  "overrides": {
+    "text": "#ddd1bc",
+    "subtle": "#b3a690",
+    "inactive": "#b3a690",
+    "claude": "#d29a62",
+    "success": "#aabd86",
+    "error": "#e0866f",
+    "warning": "#e0b866",
+    "promptBorder": "#d29a62"
+  }
+}

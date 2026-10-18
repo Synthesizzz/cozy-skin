@@ -1,0 +1,36 @@
+cozy-skin
+Copyright (c) 2026 Synthesizzz
+cozy-skin is released under the MIT License: see LICENSE.
+
+Six presets take their colours from these themes. Each palette was copied
+from the theme's published colours and then, where a colour is used as text,
+moved toward black or white just far enough to reach a 4.5:1 contrast ratio,
+so some values differ from the originals. The theme names belong to their
+authors; cozy-skin is not affiliated with them.
+
+  solarized    Solarized, Copyright (c) 2011 Ethan Schoonover. MIT License.
+  gruvbox      Gruvbox, Copyright (c) 2012 Pavel Pertsev. MIT License.
+  nord         Nord, Copyright (c) 2016 Arctic Ice Studio and Sven Greb. MIT License.
+  dracula      Dracula and Alucard, Copyright (c) 2016 Dracula Theme. MIT License.
+  catppuccin   Catppuccin (Latte, Mocha), Copyright (c) 2021 Catppuccin. MIT License.
+  tokyo-night  Tokyo Night (Day, Night), Copyright (c) 2018 enkia. MIT License.
+
+The MIT License, as it applies to each of the works above:
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

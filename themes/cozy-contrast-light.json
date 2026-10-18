@@ -1,0 +1,14 @@
+{
+  "name": "Cozy High contrast Light",
+  "base": "light",
+  "overrides": {
+    "text": "#000000",
+    "subtle": "#333333",
+    "inactive": "#333333",
+    "claude": "#003d99",
+    "success": "#004f00",
+    "error": "#a00000",
+    "warning": "#5c4300",
+    "promptBorder": "#003d99"
+  }
+}

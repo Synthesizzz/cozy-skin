@@ -1,0 +1,14 @@
+{
+  "name": "Cozy Gruvbox Dark",
+  "base": "dark",
+  "overrides": {
+    "text": "#ebdbb2",
+    "subtle": "#bdae93",
+    "inactive": "#bdae93",
+    "claude": "#fe8019",
+    "success": "#b8bb26",
+    "error": "#fb5844",
+    "warning": "#fabd2f",
+    "promptBorder": "#fe8019"
+  }
+}

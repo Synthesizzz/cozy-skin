@@ -1,0 +1,14 @@
+{
+  "name": "Cozy Nord Dark",
+  "base": "dark",
+  "overrides": {
+    "text": "#e5e9f0",
+    "subtle": "#d8dee9",
+    "inactive": "#d8dee9",
+    "claude": "#88c0d0",
+    "success": "#a3be8c",
+    "error": "#d18d94",
+    "warning": "#ebcb8b",
+    "promptBorder": "#88c0d0"
+  }
+}

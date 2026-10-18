@@ -1,0 +1,14 @@
+{
+  "name": "Cozy Kindle Light",
+  "base": "light",
+  "overrides": {
+    "text": "#43372a",
+    "subtle": "#5f4e3b",
+    "inactive": "#5f4e3b",
+    "claude": "#9a5b2c",
+    "success": "#5a7443",
+    "error": "#a8402f",
+    "warning": "#8a5f12",
+    "promptBorder": "#9a5b2c"
+  }
+}

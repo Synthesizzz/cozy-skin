@@ -1,0 +1,14 @@
+{
+  "name": "Cozy Catppuccin Light",
+  "base": "light",
+  "overrides": {
+    "text": "#4c4f69",
+    "subtle": "#686b80",
+    "inactive": "#686b80",
+    "claude": "#8839ef",
+    "success": "#317a21",
+    "error": "#d20f39",
+    "warning": "#935e13",
+    "promptBorder": "#8839ef"
+  }
+}

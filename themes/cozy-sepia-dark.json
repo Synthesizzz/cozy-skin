@@ -1,0 +1,14 @@
+{
+  "name": "Cozy Sepia Dark",
+  "base": "dark",
+  "overrides": {
+    "text": "#d9c9a8",
+    "subtle": "#a8977a",
+    "inactive": "#a8977a",
+    "claude": "#d9a066",
+    "success": "#a8b878",
+    "error": "#e08a6d",
+    "warning": "#e0bc6a",
+    "promptBorder": "#d9a066"
+  }
+}

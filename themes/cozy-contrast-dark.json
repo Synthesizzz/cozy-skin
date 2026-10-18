@@ -1,0 +1,14 @@
+{
+  "name": "Cozy High contrast Dark",
+  "base": "dark",
+  "overrides": {
+    "text": "#ffffff",
+    "subtle": "#d4d4d4",
+    "inactive": "#d4d4d4",
+    "claude": "#99ccff",
+    "success": "#8cf58c",
+    "error": "#ff9999",
+    "warning": "#ffdd66",
+    "promptBorder": "#99ccff"
+  }
+}

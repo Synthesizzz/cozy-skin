@@ -1,0 +1,14 @@
+{
+  "name": "Cozy Catppuccin Dark",
+  "base": "dark",
+  "overrides": {
+    "text": "#cdd6f4",
+    "subtle": "#a6adc8",
+    "inactive": "#a6adc8",
+    "claude": "#cba6f7",
+    "success": "#a6e3a1",
+    "error": "#f38ba8",
+    "warning": "#f9e2af",
+    "promptBorder": "#cba6f7"
+  }
+}

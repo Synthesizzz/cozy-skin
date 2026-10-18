@@ -1,0 +1,14 @@
+{
+  "name": "Cozy Gruvbox Light",
+  "base": "light",
+  "overrides": {
+    "text": "#3c3836",
+    "subtle": "#665c54",
+    "inactive": "#665c54",
+    "claude": "#af3a03",
+    "success": "#69720e",
+    "error": "#9d0006",
+    "warning": "#946110",
+    "promptBorder": "#af3a03"
+  }
+}

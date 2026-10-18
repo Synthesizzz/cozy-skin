@@ -1,0 +1,14 @@
+{
+  "name": "Cozy Paper Light",
+  "base": "light",
+  "overrides": {
+    "text": "#111111",
+    "subtle": "#4a4a48",
+    "inactive": "#4a4a48",
+    "claude": "#1f4e8c",
+    "success": "#2e6b2e",
+    "error": "#a3221c",
+    "warning": "#7a5a00",
+    "promptBorder": "#1f4e8c"
+  }
+}

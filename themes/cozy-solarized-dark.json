@@ -1,0 +1,14 @@
+{
+  "name": "Cozy Solarized Dark",
+  "base": "dark",
+  "overrides": {
+    "text": "#93a1a1",
+    "subtle": "#839496",
+    "inactive": "#839496",
+    "claude": "#3c97d7",
+    "success": "#859900",
+    "error": "#e56765",
+    "warning": "#b58900",
+    "promptBorder": "#3c97d7"
+  }
+}

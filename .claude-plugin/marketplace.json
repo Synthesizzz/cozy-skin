@@ -1,0 +1,13 @@
+{
+  "name": "cozy-mods",
+  "description": "Mods for Claude Code by Synthesizzz: cozy-skin adds cozy colours, table buttons and spinner words.",
+  "owner": {
+    "name": "Synthesizzz"
+  },
+  "plugins": [
+    {
+      "name": "cozy-skin",
+      "source": "./"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "Cozy Sepia Light",
+  "base": "light",
+  "overrides": {
+    "text": "#5b4636",
+    "subtle": "#73604b",
+    "inactive": "#73604b",
+    "claude": "#99582a",
+    "success": "#5b6e2d",
+    "error": "#a63d2a",
+    "warning": "#8a6212",
+    "promptBorder": "#99582a"
+  }
+}

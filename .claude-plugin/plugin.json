@@ -1,0 +1,12 @@
+{
+  "name": "cozy-skin",
+  "version": "0.9.6",
+  "description": "Cozy colour presets (e-reader and VS Code looks), your text colour, table copy and export buttons, and spinner words for Claude Code. /cozy panel picks them.",
+  "author": {
+    "name": "Synthesizzz"
+  },
+  "homepage": "https://github.com/Synthesizzz/cozy-skin",
+  "repository": "https://github.com/Synthesizzz/cozy-skin",
+  "license": "MIT",
+  "types": "./types/index.d.ts"
+}
