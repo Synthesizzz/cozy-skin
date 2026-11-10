@@ -218,6 +218,17 @@ export function columnShares(widths: readonly number[], words: readonly number[]
   return shares
 }
 
+// The cells across a desktop table may take before its columns would be cut off
+// in a narrow window (a side pane open beside the chat). The desktop reports no
+// width, so this stands for a narrow window and a wider one just has spare room.
+export const GRID_ROOM = 50
+
+// Whether columns whose longest words are `words` fit GRID_ROOM: each takes its
+// longest word, counted as columnShares counts it, plus its padding.
+export function gridFits(words: readonly number[]): boolean {
+  return words.reduce((sum, w) => sum + Math.ceil(w * 1.25) + 2, 0) <= GRID_ROOM
+}
+
 export function padCell(text: string, width: number, align: Align): string {
   const room = Math.max(0, width - cellWidth(text))
 

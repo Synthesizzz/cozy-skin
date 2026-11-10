@@ -6,8 +6,8 @@ import { SETTINGS_KEY } from '../hooks/settings'
 import type { Settings } from '../hooks/settings'
 import { toTsv } from '../hooks/table-export'
 import { splitTables } from '../hooks/table-parse'
-import { alignments, cellWidth, columnPages, columnShares, displayText, fitWidths, hasProseCode, longestWords, pickColumns, shortFolder, wrapCell } from '../hooks/table-layout'
-import { FOLDER_KEY, GRID_COLUMNS, LONG_ROWS, SHORT_ROWS } from '../hooks/table-render'
+import { alignments, cellWidth, columnPages, columnShares, displayText, fitWidths, gridFits, hasProseCode, longestWords, pickColumns, shortFolder, wrapCell } from '../hooks/table-layout'
+import { FOLDER_KEY, LONG_ROWS, SHORT_ROWS } from '../hooks/table-render'
 
 const PLUGIN = 'cozy-skin'
 const START = { cwd: 'C:/proj', surface: 'terminal', isInteractive: true } as const
@@ -655,14 +655,14 @@ test('a wide desktop table shows its first column and a page of the others, and 
     (await ui.findAll({ type: 'Box' })).filter(b => typeof b.props.width === 'string' && String(b.props.width).endsWith('%'))
   const headers = async () => (await ui.findAll({ type: 'Text' })).filter(t => t.props.weight === 'semibold').map(t => t.text)
 
-  // Page one: the pinned # and columns 2-5, each cell clipped with its padding inside its share.
-  expect(await cells()).toHaveLength(GRID_COLUMNS * 3)
+  // Page one: the pinned # and columns 2-4 (their longest words fill the narrow-window room), each cell clipped with its padding inside its share.
+  expect(await cells()).toHaveLength(4 * 3)
   expect((await cells()).every(b => b.props.overflow === 'hidden' && b.props.paddingX === undefined)).toBe(true)
-  expect(await headers()).toEqual(['#', 'Project', 'Owner', 'Budget', 'Spent'])
-  expect(await ui.find({ type: 'Text', text: 'Columns 2–5 of 7' })).toBeDefined()
+  expect(await headers()).toEqual(['#', 'Project', 'Owner', 'Budget'])
+  expect(await ui.find({ type: 'Text', text: 'Columns 2–4 of 7' })).toBeDefined()
   expect(await ui.find({ type: 'Button', key: 'left-0' })).toBeUndefined()
   // A column of figures, which cannot wrap, gets at least the room of a text column that can.
-  const shares = (await cells()).slice(0, GRID_COLUMNS).map(b => Number(String(b.props.width).slice(0, -1)))
+  const shares = (await cells()).slice(0, 4).map(b => Number(String(b.props.width).slice(0, -1)))
 
   expect(shares.reduce((s, x) => s + x, 0)).toBe(100)
   expect(shares[3]).toBeGreaterThanOrEqual(shares[1]!)
@@ -679,7 +679,7 @@ test('a wide desktop table shows its first column and a page of the others, and 
   expect(seen.copies.at(-1)?.text.split('\n')[0]?.split('\t')).toHaveLength(7)
 
   await ui.press({ key: 'left-0' })
-  expect(await headers()).toEqual(['#', 'Project', 'Owner', 'Budget', 'Spent'])
+  expect(await headers()).toEqual(['#', 'Project', 'Owner', 'Budget'])
 })
 
 test('five columns or fewer on the desktop have no pages', async ($, on) => {
@@ -746,4 +746,16 @@ test('a long Thai cell and a file name wrap in a desktop cell, and copy as writt
 
   await ui.press({ key: 'copy-0' })
   expect(seen.copies.at(-1)?.text).toBe(`ไฟล์\tหมายเหตุ\nรายงาน\t${thai} \`monthly_sales_report_v2.py\``)
+})
+
+test('a desktop table with long words pages fewer columns than the count cap', async ($, on) => {
+  world(on)
+
+  const table =
+    '| Name | Department | Responsibility | Classification | Reference |\n| - | - | - | - | - |\n| Ann | Engineering | Infrastructure | Confidential | monthly_report |\n'
+  const ui = await drawn($, 'desktop', table)
+
+  expect(await ui.find({ type: 'Button', key: 'right-0' })).toBeDefined()
+  expect(gridFits([4, 4, 4])).toBe(true)
+  expect(gridFits([14, 14, 14, 14, 14])).toBe(false)
 })

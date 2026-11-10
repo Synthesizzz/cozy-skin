@@ -10,7 +10,7 @@ import { LIVE_INIT } from './settings'
 import type { Live, Note, Settings } from './settings'
 import { exportsDir, folderOf, freePathIn, pickSavePath, saveCsvTo, saveXlsxTo, toTsv } from './table-export'
 import { splitTables } from './table-parse'
-import { alignments, columnPages, columnShares, columnWidths, displayText, fitWidths, fitsWhole, hasProseCode, longestWords, padCell, pickColumns, shortFolder, softBreaks, wrapCell } from './table-layout'
+import { alignments, columnPages, columnShares, columnWidths, displayText, fitWidths, fitsWhole, gridFits, hasProseCode, longestWords, padCell, pickColumns, shortFolder, softBreaks, wrapCell } from './table-layout'
 import type { Align, Table } from './table-parse'
 
 // The `live` atom (see LIVE_INIT in settings.ts). The validator reads a read
@@ -31,8 +31,9 @@ const openAtom = atom({ plugin: 'cozy-skin', key: 'open' } as const, {} as Recor
 const pageAtom = atom({ plugin: 'cozy-skin', key: 'page' } as const, {} as Record<string, number>)
 
 // A desktop table shows at most this many columns at once, its first pinned
-// and ◀ ▶ stepping through the rest. The desktop gives no width to measure,
-// so it goes by count; the terminal pages by what fits its window.
+// and ◀ ▶ stepping through the rest, and fewer when their longest words would
+// not fit a narrow window (gridFits). The desktop gives no width to measure,
+// so it goes by count and word length; the terminal pages by what fits its window.
 export const GRID_COLUMNS = 5
 
 // A table with more rows than LONG_ROWS starts folded to SHORT_ROWS.
@@ -496,7 +497,7 @@ export async function drawReply($: Parameters<DrawReplyHook>[0], e: Parameters<D
 
       return all.every(page => fitWidths(of([0, ...page], widths), of([0, ...page], words), room) !== null) ? all : []
     }
-    const pages = isGrid ? columnPages(count, cols => cols.length <= GRID_COLUMNS) : settings.tables === 'box' ? boxPages() : []
+    const pages = isGrid ? columnPages(count, cols => cols.length <= GRID_COLUMNS && gridFits(of(cols, words))) : settings.tables === 'box' ? boxPages() : []
     const page = pages.length === 0 ? null : Math.min(paged[id] ?? 0, pages.length - 1)
     const cols = page === null ? null : [0, ...(pages[page] ?? [])]
     const pick = <T extends Table>(t: T): T => (cols === null ? t : pickColumns(t, cols))
