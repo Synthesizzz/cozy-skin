@@ -2,6 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 import { applyTheme, describe, parseTheme } from './command'
 import { readWindowsLight, resolveMode } from './mode'
+import { panelPaper, repaintPanel } from './panel-paper'
 import { PRESETS } from './presets'
 import type { Mode } from './presets'
 import { LIVE_INIT, SETTINGS_KEY, sane } from './settings'
@@ -163,10 +164,12 @@ function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
+// Stores the settings, redraws, and moves the shown panel to the new paper.
 async function keep($: EngineInterface, settings: Settings, mode: Mode): Promise<void> {
   await $.store.set(SETTINGS_KEY, settings)
   await update($, settingsAtom, () => ({ settings, mode }))
   $.ui.invalidate('ui.render')
+  await repaintPanel($, settings, mode)
 }
 
 async function runCozy($: EngineInterface, args: string): Promise<{ text: string }> {
@@ -184,7 +187,8 @@ async function runCozy($: EngineInterface, args: string): Promise<{ text: string
     return { text: await installFragment($, PRESETS) }
   }
   if (action.kind === 'panel') {
-    const opened = await $.ui.open({ id: PANE, title: 'cozy-skin', focus: true })
+    const live = await read($, settingsAtom)
+    const opened = await $.ui.open({ id: PANE, title: 'cozy-skin', focus: true, ...panelPaper(live.settings, live.mode) })
 
     return { text: opened.isPlaced ? 'cozy-skin panel opened.' : `cozy-skin panel is waiting: ${opened.reason}` }
   }
@@ -228,6 +232,8 @@ function followWindows($: EngineInterface, light: boolean | null): Promise<void>
     }
     await update($, settingsAtom, () => ({ settings: synced.settings, mode }))
     $.ui.invalidate('ui.render')
+    // Windows may have answered the other mode: the panel's paper follows it.
+    await repaintPanel($, synced.settings, mode)
   })
 }
 
