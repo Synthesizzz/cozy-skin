@@ -5,7 +5,7 @@ import { readable } from './contrast'
 import { hasInlineCode, parseBlocks, parseInline, plainText } from './markdown-blocks'
 import type { Span } from './markdown-blocks'
 import { presetOf } from './presets'
-import type { Look } from './presets'
+import type { Look, Palette } from './presets'
 import { LIVE_INIT } from './settings'
 import type { Live, Note, Settings } from './settings'
 import { exportsDir, folderOf, freePathIn, pickSavePath, saveCsvTo, saveXlsxTo, toTsv } from './table-export'
@@ -35,6 +35,19 @@ const pageAtom = atom({ plugin: 'cozy-skin', key: 'page' } as const, {} as Recor
 // not fit a narrow window (gridFits). The desktop gives no width to measure,
 // so it goes by count and word length; the terminal pages by what fits its window.
 export const GRID_COLUMNS = 5
+
+// A desktop body row lights in the preset's highlight under the pointer, as a
+// spreadsheet's does, so a long row is easy to follow across; the header row
+// (r 0) stays as it is. The surface paints it: no hook runs on a hover.
+export function rowHover(p: Palette, r: number): { hover?: { backgroundColor: string } } {
+  return r === 0 ? {} : { hover: { backgroundColor: p.hl } }
+}
+
+// A body row's ink, readable on its band and still under the highlight: moved
+// further only where the band's ink would not read on the highlight.
+export function rowInk(ink: string, band: string, hl: string): string {
+  return readable(readable(ink, band), hl)
+}
 
 // A table with more rows than LONG_ROWS starts folded to SHORT_ROWS.
 export const LONG_ROWS = 20
@@ -260,19 +273,21 @@ export async function drawReply($: Parameters<DrawReplyHook>[0], e: Parameters<D
     const bands = [p.surface, ...table.rows.map((_, r) => (r % 2 === 1 ? p.zebra : undefined))]
     // Four or five columns share the reply's width with less room in each cell.
     const room = table.header.length >= 4 ? ('sm' as const) : ('md' as const)
+    // The header reads on its band; a body row on its band and under the highlight.
+    const ink = (color: string, r: number) => (r === 0 ? readable(color, bands[r] ?? p.bg) : rowInk(color, bands[r] ?? p.bg, p.hl))
 
     return (
       <Box flexDirection="column" borderStyle="round" borderColor={p.line} backgroundColor={p.bg} overflow="hidden" padding={0}>
         {[table.header, ...table.rows].map((cells, r) => (
-          <Box key={`row-${r}`} flexDirection="row" backgroundColor={bands[r]} paddingY="sm">
+          <Box key={`row-${r}`} flexDirection="row" backgroundColor={bands[r]} paddingY="sm" {...rowHover(p, r)}>
             {table.header.map((_, c) => (
               // The share is the cell's whole width, its padding inside it, so
               // a row never runs past the frame; what still does not fit is
               // clipped at the cell's edge rather than drawn over the next.
               <Box key={`cell-${r}-${c}`} width={`${shares[c] ?? 0}%`} flexShrink={1} overflow="hidden" flexDirection="row" justifyContent={justify(c)}>
                 <Box paddingX={room} flexShrink={1}>
-                  <Text color={readable(p.fg, bands[r] ?? p.bg)} wrap="wrap" {...(r === 0 ? { weight: 'semibold' as const } : {})}>
-                    {drawSpans(soften(parseInline(cells[c] ?? '')), codeInk === undefined ? undefined : readable(codeInk, bands[r] ?? p.bg))}
+                  <Text color={ink(p.fg, r)} wrap="wrap" {...(r === 0 ? { weight: 'semibold' as const } : {})}>
+                    {drawSpans(soften(parseInline(cells[c] ?? '')), codeInk === undefined ? undefined : ink(codeInk, r))}
                   </Text>
                 </Box>
               </Box>

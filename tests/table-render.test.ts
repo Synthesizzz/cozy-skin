@@ -1,13 +1,14 @@
 import type { On } from 'claude-code'
 import { expect, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
-import { presetOf } from '../hooks/presets'
+import { PRESETS, presetOf } from '../hooks/presets'
+import { contrast, readable } from '../hooks/contrast'
 import { SETTINGS_KEY } from '../hooks/settings'
 import type { Settings } from '../hooks/settings'
 import { toTsv } from '../hooks/table-export'
 import { splitTables } from '../hooks/table-parse'
 import { alignments, cellWidth, columnPages, columnShares, displayText, fitWidths, gridFits, hasProseCode, longestWords, pickColumns, shortFolder, wrapCell } from '../hooks/table-layout'
-import { FOLDER_KEY, LONG_ROWS, SHORT_ROWS } from '../hooks/table-render'
+import { FOLDER_KEY, LONG_ROWS, SHORT_ROWS, rowHover, rowInk } from '../hooks/table-render'
 
 const PLUGIN = 'cozy-skin'
 const START = { cwd: 'C:/proj', surface: 'terminal', isInteractive: true } as const
@@ -447,8 +448,9 @@ test('the desktop draws a framed grid in the preset colours that always fits', a
   const texts = await ui.findAll({ type: 'Text' })
 
   expect(texts.filter(t => t.props.wrap === 'wrap' && t.props.color === nord.fg)).toHaveLength(12)
-  // The code chip keeps its mark, in the preset accent.
-  expect(texts.some(t => t.text.includes('ops') && t.props.mono === true && t.props.color === nord.accent)).toBe(true)
+  // The code chip keeps its mark, in the preset accent, moved only as far as it
+  // must to read on the row's highlight too (Nord's dark accent needs a step).
+  expect(texts.some(t => t.text.includes('ops') && t.props.mono === true && t.props.color === rowInk(nord.accent, nord.bg, nord.hl))).toBe(true)
   // The footer: the size on the left, the three buttons on the right.
   expect(await ui.find({ type: 'Text', text: '3 rows · 3 columns' })).toBeDefined()
   expect(await labels(ui)).toEqual(['Copy', 'CSV', 'XLSX'])
@@ -758,4 +760,40 @@ test('a desktop table with long words pages fewer columns than the count cap', a
   expect(await ui.find({ type: 'Button', key: 'right-0' })).toBeDefined()
   expect(gridFits([4, 4, 4])).toBe(true)
   expect(gridFits([14, 14, 14, 14, 14])).toBe(false)
+})
+
+// The kit strips `hover` from every element, so the rows are checked for the
+// keys a hover needs, and rowHover for what it asks the surface to paint.
+test("on the desktop a body row lights in the preset's highlight under the pointer, the header does not", async ($, on) => {
+  world(on)
+
+  const p = presetOf('kindle')!.dark.palette
+  const ui = await drawn($, 'desktop', TABLE)
+  const rows = (await ui.findAll({ type: 'Box' })).filter(b => typeof b.key === 'string' && b.key.startsWith('row-'))
+
+  expect(rows.map(r => r.key)).toEqual(['row-0', 'row-1', 'row-2'])
+  expect(rowHover(p, 0)).toEqual({})
+  expect(rowHover(p, 1)).toEqual({ hover: { backgroundColor: p.hl } })
+  expect(rowHover(p, 2)).toEqual({ hover: { backgroundColor: p.hl } })
+})
+
+test("a body row's ink reads at 4.5:1 on its band and on the highlight, in every preset", () => {
+  for (const preset of PRESETS) {
+    for (const mode of ['light', 'dark'] as const) {
+      const p = preset[mode].palette
+
+      for (const band of [p.bg, p.zebra]) {
+        const ink = rowInk(p.fg, band, p.hl)
+
+        expect(contrast(ink, band), `${preset.name} ${mode} ink on ${band}`).toBeGreaterThanOrEqual(4.5)
+        expect(contrast(ink, p.hl), `${preset.name} ${mode} ink on hl ${p.hl}`).toBeGreaterThanOrEqual(4.5)
+      }
+    }
+  }
+})
+
+test('a body row keeps the ink it had wherever that ink already reads on the highlight', () => {
+  const p = presetOf('kindle')!.light.palette
+
+  expect(rowInk(p.fg, p.bg, p.hl)).toBe(readable(p.fg, p.bg))
 })
