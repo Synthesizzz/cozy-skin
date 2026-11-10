@@ -2,7 +2,7 @@ import { PRESETS, presetOf } from './presets'
 import type { Mode } from './presets'
 import { colorNames, isHex, isNamed } from './colors'
 import { LOOK_NAME, MAX_LOOKS } from './settings'
-import type { Settings, Side } from './settings'
+import type { BackdropNote, Settings, Side } from './settings'
 
 export type ThemeAction =
   | { kind: 'show' }
@@ -15,6 +15,7 @@ export type ThemeAction =
   | { kind: 'tables'; tables: 'box' | 'text' | 'off' }
   | { kind: 'tools'; tools: 'on' | 'off' }
   | { kind: 'bubble'; bubble: 'cozy' | 'app' }
+  | { kind: 'backdrop'; backdrop: 'off' | 'paper' }
   | { kind: 'terminal-install' }
   | { kind: 'panel' }
   | { kind: 'color'; side: Side; color: string | null }
@@ -26,7 +27,7 @@ export type ThemeAction =
 const names = () => PRESETS.map(preset => preset.name).join(', ')
 
 const USAGE =
-  'Use: /cozy [<preset> [light|dark|auto] | light | dark | auto | on | off | calm on|off | icons unicode|ascii | tables box|text|off | tools on|off | bubble cozy|app | color you|code <name>|#rrggbb|off | save|look|forget <name> | panel | terminal install]'
+  'Use: /cozy [<preset> [light|dark|auto] | light | dark | auto | on | off | calm on|off | icons unicode|ascii | tables box|text|off | tools on|off | bubble cozy|app | backdrop off|paper | color you|code <name>|#rrggbb|off | save|look|forget <name> | panel | terminal install]'
 
 const SIDES: Record<string, Side> = { you: 'you', me: 'you', code: 'code' }
 
@@ -62,6 +63,9 @@ export function parseTheme(args: string): ThemeAction {
   if (head === 'bubble' && (arg === 'cozy' || arg === 'app') && rest.length === 0) {
     return { kind: 'bubble', bubble: arg }
   }
+  if (head === 'backdrop' && (arg === 'off' || arg === 'paper') && rest.length === 0) {
+    return { kind: 'backdrop', backdrop: arg }
+  }
   if ((head === 'save' || head === 'look' || head === 'forget') && arg !== undefined && rest.length === 0) {
     if (!LOOK_NAME.test(arg)) {
       return fail(`"${arg}" is not a look name: use lowercase letters, digits and dashes, up to 24.`)
@@ -95,7 +99,7 @@ export function parseTheme(args: string): ThemeAction {
   if ((arg === 'light' || arg === 'dark' || arg === 'auto') && rest.length === 0 && presetOf(head) !== undefined) {
     return { kind: 'preset', name: head, mode: arg }
   }
-  if (['calm', 'icons', 'tables', 'tools', 'bubble', 'terminal', 'color', 'colour', 'save', 'look', 'forget'].includes(head)) {
+  if (['calm', 'icons', 'tables', 'tools', 'bubble', 'backdrop', 'terminal', 'color', 'colour', 'save', 'look', 'forget'].includes(head)) {
     return fail(`Bad value for "${head}".`)
   }
 
@@ -123,6 +127,8 @@ export function applyTheme(settings: Settings, action: ThemeAction): Settings {
       return { ...settings, tools: action.tools }
     case 'bubble':
       return { ...settings, bubble: action.bubble }
+    case 'backdrop':
+      return { ...settings, backdrop: action.backdrop }
     case 'color':
       return { ...settings, colors: { ...settings.colors, [action.side]: action.color } }
     case 'save': {
@@ -150,7 +156,25 @@ export function applyTheme(settings: Settings, action: ThemeAction): Settings {
   }
 }
 
-export function describe(settings: Settings, mode: Mode): string {
+// The backdrop as /cozy tells it: off, waiting for the skin or mode auto, or
+// what the app last answered.
+export function backdropLine(settings: Settings, note: BackdropNote): string {
+  if (settings.backdrop === 'off') {
+    return 'Backdrop: off'
+  }
+  if (!settings.enabled) {
+    return 'Backdrop: paper (not drawn while cozy-skin is off)'
+  }
+  if (settings.mode !== 'auto') {
+    return "Backdrop: paper (waiting for mode auto: the app's own text follows Windows, so the paper does too)"
+  }
+  if (note.isDrawn) {
+    return 'Backdrop: paper (drawn behind the window)'
+  }
+  return `Backdrop: paper (not drawn: ${note.reason ?? 'the app has not answered yet'})`
+}
+
+export function describe(settings: Settings, mode: Mode, note: BackdropNote = { isDrawn: false, reason: null, isSet: false }): string {
   const lines = [
     settings.enabled ? 'cozy-skin is on.' : 'cozy-skin is off. /cozy on, or pick a preset or a mode, turns it on.',
     `Preset: ${settings.preset} (${names()})`,
@@ -160,6 +184,7 @@ export function describe(settings: Settings, mode: Mode): string {
     `Tables: ${settings.tables}`,
     `Tool rows: ${settings.tools}`,
     `Your bubble: ${settings.bubble}${settings.bubble === 'app' ? " (Claude Code's own, with Rewind and selection)" : ''}`,
+    backdropLine(settings, note),
     `Your text: ${settings.colors.you ?? 'preset'}, inline code: ${settings.colors.code ?? 'preset'}`,
     `Your looks: ${Object.keys(settings.looks).join(', ') || 'none (/cozy save <name>)'}`,
   ]

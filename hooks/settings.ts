@@ -14,6 +14,10 @@ export type Settings = {
   // preset's colours, or the app's own, which keeps Rewind, Fork, text
   // selection and the right-click menu that a mod-drawn row cannot have.
   bubble: 'cozy' | 'app'
+  // The desktop window behind the conversation: the preset's paper, with the
+  // app's panels frosted over it, or the app's own. Drawn in mode auto only
+  // (see wantsBackdrop in backdrop.tsx).
+  backdrop: 'off' | 'paper'
   enabled: boolean
   // Claude Code's own theme before cozy-skin first changed it; null until the
   // first `/cozy <preset>` or `/cozy <mode>`, and again after `/cozy off`.
@@ -42,6 +46,13 @@ export type Live = { settings: Settings; mode: Mode }
 // What a table's buttons last said: a copy's answer, a saved path or an error.
 export type Note = { text: string; isError: boolean }
 
+// What the app last answered about cozy's backdrop: drawn, or why not (null
+// when cozy has none standing, as when it is off), and whether the theme
+// standing is one cozy set since it loaded, the only one it may clear.
+export type BackdropNote = { isDrawn: boolean; reason: string | null; isSet: boolean }
+
+export const BACKDROP_NOTE_INIT: BackdropNote = { isDrawn: false, reason: null, isSet: false }
+
 export const DEFAULTS: Settings = {
   preset: 'kindle',
   mode: 'auto',
@@ -50,6 +61,7 @@ export const DEFAULTS: Settings = {
   tables: 'box',
   tools: 'on',
   bubble: 'cozy',
+  backdrop: 'off',
   enabled: true,
   savedTheme: null,
   appliedTheme: null,
@@ -80,6 +92,7 @@ export function sane(raw: unknown): Settings {
     tables: pick(o.tables, ['box', 'text', 'off'], DEFAULTS.tables),
     tools: pick(o.tools, ['on', 'off'], DEFAULTS.tools),
     bubble: pick(o.bubble, ['cozy', 'app'], DEFAULTS.bubble),
+    backdrop: pick(o.backdrop, ['off', 'paper'], DEFAULTS.backdrop),
     enabled: typeof o.enabled === 'boolean' ? o.enabled : DEFAULTS.enabled,
     savedTheme: typeof o.savedTheme === 'string' ? o.savedTheme : null,
     appliedTheme: typeof o.appliedTheme === 'string' ? o.appliedTheme : null,

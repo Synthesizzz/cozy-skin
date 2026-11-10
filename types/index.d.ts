@@ -14,6 +14,7 @@ declare module 'claude-code' {
           tables: 'box' | 'text' | 'off'
           tools: 'on' | 'off'
           bubble: 'cozy' | 'app'
+          backdrop: 'off' | 'paper'
           enabled: boolean
           savedTheme: string | null
           appliedTheme: string | null
@@ -22,6 +23,8 @@ declare module 'claude-code' {
         }
         mode: 'light' | 'dark'
       }
+      // What the app last answered about cozy's backdrop (see BackdropNote in hooks/settings.ts).
+      backdrop: { isDrawn: boolean; reason: string | null; isSet: boolean }
       // What each table's buttons last said, by `<message id>:<table number>`.
       notes: Record<string, { text: string; isError: boolean }>
       // Long tables shown in full, by `<message id>:<table number>`.

@@ -194,7 +194,7 @@ test('the panel runs skin, preset, mode and palette before the colour picks', as
   // Group headings are the semibold lines.
   const headings = (await ui.findAll({ type: 'Text' })).filter(t => t.props.weight === 'semibold').map(t => t.text)
 
-  expect(headings.map(h => h.split(' ')[0])).toEqual(['Skin', 'Preset', 'Mode', 'Palette', 'Your', 'Inline', 'Tables', 'Tool', 'Your', 'Your'])
+  expect(headings.map(h => h.split(' ')[0])).toEqual(['Skin', 'Preset', 'Mode', 'Palette', 'Your', 'Inline', 'Tables', 'Tool', 'Your', 'Backdrop', 'Your'])
   // Who draws your prompt sits with the other switches, before your looks.
   expect(headings.findIndex(h => h.startsWith('Your bubble'))).toBe(headings.findIndex(h => h.startsWith('Tool')) + 1)
   // The presets sit on two shelves under one heading.

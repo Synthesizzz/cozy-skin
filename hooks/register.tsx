@@ -3,6 +3,7 @@ import type { EngineInterface, Register } from 'claude-code'
 import { applyTheme, describe, parseTheme } from './command'
 import { readWindowsLight, resolveMode } from './mode'
 import { panelPaper, repaintPanel } from './panel-paper'
+import { backdropNote, drawBackdrop, forgetBackdrop, syncBackdrop } from './backdrop'
 import { PRESETS } from './presets'
 import type { Mode } from './presets'
 import { LIVE_INIT, SETTINGS_KEY, sane } from './settings'
@@ -164,12 +165,17 @@ function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
-// Stores the settings, redraws, and moves the shown panel to the new paper.
-async function keep($: EngineInterface, settings: Settings, mode: Mode): Promise<void> {
+// Stores the settings, redraws, and moves the window's paper with them: the
+// shown panel and the backdrop. Only the person's own /cozy or panel press
+// comes here, so it may clear the theme cozy set. Resolves to what the app
+// said of the backdrop.
+async function keep($: EngineInterface, settings: Settings, mode: Mode) {
   await $.store.set(SETTINGS_KEY, settings)
   await update($, settingsAtom, () => ({ settings, mode }))
   $.ui.invalidate('ui.render')
   await repaintPanel($, settings, mode)
+
+  return syncBackdrop($, settings, mode, true)
 }
 
 async function runCozy($: EngineInterface, args: string): Promise<{ text: string }> {
@@ -181,7 +187,9 @@ async function runCozy($: EngineInterface, args: string): Promise<{ text: string
   if (action.kind === 'show') {
     const live = await read($, settingsAtom)
 
-    return { text: [describe(live.settings, live.mode), hintFor(live.settings, live.mode)].filter(Boolean).join('\n') }
+    const note = await backdropNote($).catch(() => undefined)
+
+    return { text: [describe(live.settings, live.mode, note), hintFor(live.settings, live.mode)].filter(Boolean).join('\n') }
   }
   if (action.kind === 'terminal-install') {
     return { text: await installFragment($, PRESETS) }
@@ -206,12 +214,12 @@ async function runCozy($: EngineInterface, args: string): Promise<{ text: string
     const mode = resolveMode(changed.mode, changed.mode === 'auto' ? await readWindowsLight($) : null)
     const synced = moved ? await syncTheme($, changed, mode, false) : { settings: changed, note: null }
 
-    await keep($, synced.settings, mode)
+    const note = await keep($, synced.settings, mode)
 
     // The paste line follows a change of preset, mode or switch, not a table or icon tweak.
     const hint = moved ? hintFor(synced.settings, mode) : ''
 
-    return { text: [describe(synced.settings, mode), synced.note, hint].filter(Boolean).join('\n') }
+    return { text: [describe(synced.settings, mode, note), synced.note, hint].filter(Boolean).join('\n') }
   })
 }
 
@@ -234,6 +242,8 @@ function followWindows($: EngineInterface, light: boolean | null): Promise<void>
     $.ui.invalidate('ui.render')
     // Windows may have answered the other mode: the panel's paper follows it.
     await repaintPanel($, synced.settings, mode)
+    // Unasked: it sets the paper again in the new mode, never clears.
+    await syncBackdrop($, synced.settings, mode, false)
   })
 }
 
@@ -245,7 +255,7 @@ export const register: Register = on => {
         name: COMMAND,
         description: 'Switch the cozy-skin preset, mode, text colours and table style (/cozy panel to click)',
         argumentHint:
-          '[<preset> | light | dark | auto | on | off | panel | color you|code <name>|#rrggbb|off | save|look|forget <name> | calm on|off | icons unicode|ascii | tables box|text|off | tools on|off | bubble cozy|app | terminal install]',
+          '[<preset> | light | dark | auto | on | off | panel | color you|code <name>|#rrggbb|off | save|look|forget <name> | calm on|off | icons unicode|ascii | tables box|text|off | tools on|off | bubble cozy|app | backdrop off|paper | terminal install]',
       })
     } catch {
       // The skin still draws: only the command is missing.
@@ -275,6 +285,10 @@ export const register: Register = on => {
 
     // Dark until Windows answers; the answer must not hold the session up.
     await update($, settingsAtom, () => ({ settings, mode: resolveMode(settings.mode, null) }))
+    // A theme goes with the module that set it, so each start sets the paper
+    // again; with no paper wanted it leaves any theme standing alone.
+    await forgetBackdrop($)
+    await syncBackdrop($, settings, resolveMode(settings.mode, null), false)
     if (settings.mode === 'auto') {
       void readWindowsLight($)
         .then(light => followWindows($, light))
@@ -309,6 +323,25 @@ export const register: Register = on => {
     const { Text } = $.ui.resolve(e)
 
     return <Text dimColor>cozy-skin could not draw this panel: {next.error.message ?? next.error.kind}</Text>
+  })
+
+  // The desktop window behind the conversation, in the preset's paper. A
+  // failure leaves it as the next hook draws it, under one dim line that says why.
+  on('ui.render', { component: 'Backdrop' }, drawBackdrop).catch(async ($, e, next) => {
+    const beneath = await next(e)
+
+    try {
+      const { Box, Text } = $.ui.resolve(e)
+
+      return (
+        <Box flexDirection="column">
+          <Text dimColor>cozy-skin could not draw the backdrop: {next.error.message ?? next.error.kind}</Text>
+          {beneath}
+        </Box>
+      )
+    } catch {
+      return beneath
+    }
   })
 
   // Tool rows get a dot in the preset's colour for their kind. A failure leaves

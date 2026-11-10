@@ -4,7 +4,9 @@
 
 import { atom, read } from 'claude-code'
 import type { MatchedHook, RenderChildren } from 'claude-code'
+import { backdropNote } from './backdrop'
 import { NAMED, isHex, resolveColor } from './colors'
+import { backdropLine } from './command'
 import { readable } from './contrast'
 import { PRESETS, presetOf } from './presets'
 import type { Palette } from './presets'
@@ -129,6 +131,8 @@ export async function drawPane($: Parameters<DrawPaneHook>[0], e: Parameters<Dra
   const { Box, Text, Button } = $.ui.resolve(e)
   const isVector = e.surface !== 'terminal'
   const { settings, mode } = await read($, settingsAtom)
+  // Only the desktop draws a backdrop, so only its panel offers one.
+  const drawn = e.surface === 'desktop' ? await backdropNote($).catch(() => undefined) : undefined
   const dot = settings.icons === 'ascii' ? '#' : '●'
   const preset = PRESETS.find(p => p.name === settings.preset) ?? PRESETS[0]
   const p = preset === undefined ? undefined : preset[mode].palette
@@ -336,6 +340,18 @@ export async function drawPane($: Parameters<DrawPaneHook>[0], e: Parameters<Dra
           ? "Claude Code's own bubble on the desktop: Rewind, Fork, selecting its text and the right-click menu, in the app's colours."
           : "Your prompt on the preset's paper, with its time, Copy and Edit on hover. No Rewind, Fork or text selection: the app keeps those to its own bubble.",
       )}
+      {e.surface !== 'desktop'
+        ? null
+        : group(
+            'Backdrop',
+            [
+              pick('backdrop-off', 'off', settings.backdrop === 'off', 'backdrop off'),
+              pick('backdrop-paper', 'paper', settings.backdrop === 'paper', 'backdrop paper'),
+            ],
+            settings.backdrop === 'off'
+              ? "The whole window on the preset's paper, the app's sidebar and prompt frosted over it. Drawn in mode auto only, where the app's own text follows Windows as the paper does."
+              : backdropLine(settings, drawn ?? { isDrawn: false, reason: null, isSet: false }).replace(/^Backdrop: paper /, 'Paper '),
+          )}
       {group(
         'Your looks',
         Object.entries(settings.looks).map(([name, look]) =>
