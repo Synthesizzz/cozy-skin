@@ -2,6 +2,13 @@
 
 Newest first. Versions are the plugin's (`.claude-plugin/plugin.json`).
 
+## 0.10.0 (2026-11-17)
+
+- `/cozy backdrop paper|off`: in mode `auto`, the preset's paper is drawn behind the whole desktop window, so the window is paper-toned and not only the chat. Off by default, because it uses an early-access API of Claude Code 2.1.322 or newer that the app may not draw yet: `/cozy` says whether it is drawn and, when not, why. Modes `light` and `dark` leave the window alone, since the app's own text colour would not match the paper.
+- The `/cozy` panel opens on the preset's paper in mode `auto`.
+- A desktop table row lights in the preset's highlight under the pointer.
+- A narrow desktop window pages fewer columns when a long word would not fit, so a table in a side tab or split view is no longer cut at the edge.
+
 ## 0.9.6 (2026-10-18)
 
 - In a narrow desktop window, a table cell with a long Thai sentence or a file name such as `monthly_sales_report_v2.py` wraps inside its cell instead of being cut off at the cell's edge. Thai has no spaces between words and a file name has none at all, so the desktop had nowhere to wrap them: cozy now marks places to break, between Thai words and after `_ . / \ : -`, invisible on screen. Copy, CSV and XLSX keep the text as written. A two-column table has no columns to page through, so wrapping is what keeps it readable.

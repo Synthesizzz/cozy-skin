@@ -72,10 +72,10 @@ test("the app's panels frost in the preset's own paper, a raw colour, and the sc
   for (const preset of PRESETS) {
     for (const mode of ['light', 'dark'] as const) {
       const args = backdropArgs(sane({ preset: preset.name, mode: 'auto', backdrop: 'paper' }), mode)
+      expect(Object.keys(args).sort()).toEqual(['backdrop', 'overrideColorScheme'])
 
-      expect(Object.keys(args)).toEqual(['backdrop'])
-      expect(args.backdrop?.id).toBe(BACKDROP_ID)
-      expect(args.backdrop?.colorScheme).toBe(mode)
+      expect((args.backdrop as { scene?: string } | undefined)?.scene).toBe(BACKDROP_ID)
+      expect(args.overrideColorScheme).toBe(mode)
       expect(tintOf(args)).toBe(preset[mode].palette.bg)
       expect(tintOf(args)).toMatch(/^#[0-9a-f]{6}$/i)
       expect(args.backdrop?.glass === false ? undefined : args.backdrop?.glass?.opacity).toBe(0.7)
@@ -179,7 +179,7 @@ test("the backdrop is drawn as the preset's paper over the whole window", async 
     surface: 'desktop',
     component: 'Backdrop',
     requestId: 'backdrop',
-    props: { id: BACKDROP_ID, plugin: PLUGIN, glass: { blur: 16, tint: kindle.dark.palette.bg, opacity: 0.7 }, colorScheme: 'dark' },
+    props: { scene: BACKDROP_ID, plugin: PLUGIN, glass: { blur: 16, tint: kindle.dark.palette.bg, opacity: 0.7 }, overrideColorScheme: 'dark' },
   })
   const paper = (await ui.findAll({ type: 'Box' })).find(b => b.props.backgroundColor === kindle.dark.palette.bg)
 
@@ -200,7 +200,7 @@ test("another plugin's backdrop is left as it draws", async ($, on) => {
     surface: 'desktop',
     component: 'Backdrop',
     requestId: 'backdrop',
-    props: { id: 'lagoon', plugin: 'someone-else', glass: false },
+    props: { scene: 'lagoon', plugin: 'someone-else', glass: false },
   })
 
   expect(await ui.find({ type: 'Text', text: 'beneath' })).toBeDefined()

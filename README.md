@@ -2,7 +2,7 @@
 
 Cozy colours, nicer tables and calmer spinner words for Claude Code.
 
-> **Windows only for now.** Tested with Claude Code 2.1.299 on Windows 11, in the terminal and the desktop app. On macOS or Linux the colours and tables still work, but auto mode, the CSV/XLSX Save dialog, prompt times and Windows Terminal schemes do not.
+> **Windows only for now.** Tested with Claude Code 2.1.325 on Windows 11, in the terminal and the desktop app. On macOS or Linux the colours and tables still work, but auto mode, the CSV/XLSX Save dialog, prompt times and Windows Terminal schemes do not.
 
 ## Install
 
@@ -33,6 +33,7 @@ Before uninstalling, run `/cozy off` to get your Claude Code theme back.
 | `/cozy panel` | Click-to-change panel |
 | `/cozy <preset> [light\|dark\|auto]` | Pick a preset, and optionally the mode |
 | `/cozy light` · `dark` · `auto` | Mode (`auto` follows Windows) |
+| `/cozy backdrop paper` · `off` | Preset paper behind the whole desktop window, in mode `auto` (needs Claude Code 2.1.322 or newer) |
 | `/cozy on` · `off` | Turn the skin on or off (`off` restores your theme) |
 | `/cozy color you\|code <name>\|#rrggbb\|off` | Colour of your text or of inline code |
 | `/cozy tables box\|text\|off` | Table style |
@@ -55,7 +56,7 @@ Colour names: `ink`, `rust`, `plum`, `teal`, `slate`, `olive`, `brick`, `ochre`.
 
 ## Limits
 
-A mod can't paint the app window, change fonts, recolour the spinner, stop the engine's shimmer, or scroll sideways. The terminal shows table cells without markdown marks; the desktop keeps them.
+A mod paints the app window only through `/cozy backdrop`, in mode `auto`, and only where the app draws it. It can't change fonts, recolour the spinner, stop the engine's shimmer, or scroll sideways. The terminal shows table cells without markdown marks; the desktop keeps them.
 
 ## Developing
 

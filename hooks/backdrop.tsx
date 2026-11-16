@@ -40,7 +40,7 @@ export function paperOf(settings: Settings, mode: Mode): string {
 // The panels frost in the paper itself, so the app's sidebar and prompt sit on
 // the same tone a little denser; the scheme says which mode the paper is.
 export function backdropArgs(settings: Settings, mode: Mode): ThemeSetArgs {
-  return { backdrop: { id: BACKDROP_ID, glass: { tint: paperOf(settings, mode), opacity: GLASS_OPACITY }, colorScheme: mode } }
+  return { backdrop: { scene: BACKDROP_ID, glass: { tint: paperOf(settings, mode), opacity: GLASS_OPACITY } }, overrideColorScheme: mode }
 }
 
 function messageOf(error: unknown): string {
@@ -99,7 +99,7 @@ type DrawBackdropHook = MatchedHook<'ui.render', { component: 'Backdrop' }>
 // Cozy's backdrop is one sheet of the preset's paper over the whole window;
 // another plugin's is left to that plugin.
 export const drawBackdrop: DrawBackdropHook = async ($, e, next) => {
-  if (e.props.plugin !== 'cozy-skin' || e.props.id !== BACKDROP_ID) {
+  if (e.props.plugin !== 'cozy-skin' || e.props.scene !== BACKDROP_ID) {
     return next(e)
   }
   const { Box } = $.ui.resolve(e)
