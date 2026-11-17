@@ -2,11 +2,11 @@
 // goes the way the typed `/cozy` words do. Top to bottom: the switch, the
 // look (preset, mode, its palette), then the colours picked on top of it.
 
-import { atom, read } from 'claude-code'
+import { atom, read, update } from 'claude-code'
 import type { MatchedHook, RenderChildren } from 'claude-code'
 import { backdropNote } from './backdrop'
 import { NAMED, isHex, resolveColor } from './colors'
-import { backdropLine } from './command'
+import { backdropLine, parseTheme } from './command'
 import { readable } from './contrast'
 import { PRESETS, presetOf } from './presets'
 import type { Palette } from './presets'
@@ -16,6 +16,10 @@ import type { Side } from './settings'
 // The `live` atom (see LIVE_INIT in settings.ts). The validator reads a read
 // only where the atom is declared in the same file.
 const settingsAtom = atom({ plugin: 'cozy-skin', key: 'live' } as const, LIVE_INIT)
+
+// What is typed in the panel's two fields and the last thing it had to say
+// about it (a refused name or colour). Kept in an atom: a pane has no state of its own.
+const draftAtom = atom({ plugin: 'cozy-skin', key: 'draft' } as const, { look: '', you: '', code: '', note: '' })
 
 export const PANE = 'cozy-skin'
 
@@ -112,9 +116,9 @@ export function lookPreview(look: Palette, you: string, code: string): { source:
       `<rect x="122" y="10" width="130" height="22" rx="11" fill="${look.surface}"/>` +
       `<text x="242" y="25" ${font} fill="${readable(you, look.surface)}" text-anchor="end" textLength="104" lengthAdjust="spacingAndGlyphs">Show me the budget</text>` +
       `<text x="12" y="52" ${font} fill="${ink}" textLength="20" lengthAdjust="spacingAndGlyphs">Run</text>` +
-      `<rect x="36" y="41" width="76" height="15" rx="2" fill="#80808030"/>` +
-      `<text x="40" y="52" ${mono} fill="${chipInk}" textLength="68" lengthAdjust="spacingAndGlyphs">/cozy panel</text>` +
-      `<text x="118" y="52" ${font} fill="${ink}" textLength="88" lengthAdjust="spacingAndGlyphs">then pick a look.</text>` +
+      `<rect x="36" y="41" width="42" height="15" rx="2" fill="#80808030"/>` +
+      `<text x="40" y="52" ${mono} fill="${chipInk}" textLength="34" lengthAdjust="spacingAndGlyphs">/cozy</text>` +
+      `<text x="84" y="52" ${font} fill="${ink}" textLength="88" lengthAdjust="spacingAndGlyphs">then pick a look.</text>` +
       table +
       '</svg>',
     width,
@@ -128,7 +132,38 @@ type DrawPaneHook = MatchedHook<'ui.render', { component: 'Pane'; requestId: str
 export type Choose = (args: string) => Promise<unknown>
 
 export async function drawPane($: Parameters<DrawPaneHook>[0], e: Parameters<DrawPaneHook>[1], choose: Choose) {
-  const { Box, Text, Button } = $.ui.resolve(e)
+  const els = $.ui.resolve(e)
+  const { Box, Text, Button } = els
+  // Only surfaces that take typing have an Input; elsewhere the fields are left out.
+  const Input = 'Input' in els ? els.Input : undefined
+  const draft = await read($, draftAtom)
+  const setDraft = (next: Partial<typeof draft>) => update($, draftAtom, d => ({ ...d, ...next })).then(() => $.ui.invalidate('ui.render'))
+  // A press runs the choice, then says under the header what the app answered
+  // that the buttons do not show: a refused theme change, a fallback, a failure.
+  const press = (args: string) =>
+    choose(args)
+      .then(result => {
+        const notes = typeof result === 'object' && result !== null && 'notes' in result && typeof result.notes === 'string' ? result.notes : ''
+
+        return setDraft({ note: notes })
+      })
+      .catch((error: unknown) => setDraft({ note: `cozy-skin: ${error instanceof Error ? error.message : String(error)}` }))
+  // A typed name or colour goes the way the typed words did; a refusal is said under the header.
+  const submit = async (field: 'look' | 'you' | 'code', text: string) => {
+    const value = text.trim().toLowerCase()
+    const words = field === 'look' ? `save ${value}` : `color ${field} ${value}`
+    const parsed = parseTheme(words)
+
+    if (value === '') {
+      return
+    }
+    if (parsed.kind === 'error') {
+      await setDraft({ note: parsed.message.replace(/ Use \/cozy to open the panel\.$/, '') })
+      return
+    }
+    await press(words)
+    await setDraft({ [field]: '' })
+  }
   const isVector = e.surface !== 'terminal'
   const { settings, mode } = await read($, settingsAtom)
   // Only the desktop draws a backdrop, so only its panel offers one.
@@ -138,7 +173,7 @@ export async function drawPane($: Parameters<DrawPaneHook>[0], e: Parameters<Dra
   const p = preset === undefined ? undefined : preset[mode].palette
 
   const pick = (key: string, label: string, isOn: boolean, args: string, color?: string) => (
-    <Button key={key} label={label} variant={isOn ? 'primary' : 'secondary'} onPress={() => void choose(args)}>
+    <Button key={key} label={label} variant={isOn ? 'primary' : 'secondary'} onPress={() => void press(args)}>
       {color === undefined ? (
         <Text>{label}</Text>
       ) : (
@@ -267,6 +302,7 @@ export async function drawPane($: Parameters<DrawPaneHook>[0], e: Parameters<Dra
   // Sections spaced well apart, with a margin round the whole panel.
   return (
     <Box flexDirection="column" gap="lg" padding="sm">
+      {draft.note === '' ? null : <Text dimColor>{draft.note}</Text>}
       {group(
         'Skin',
         [pick('skin-on', 'on', settings.enabled, 'on'), pick('skin-off', 'off', !settings.enabled, 'off')],
@@ -313,9 +349,23 @@ export async function drawPane($: Parameters<DrawPaneHook>[0], e: Parameters<Dra
       {colours('you', 'Your text', "Your messages, in a bubble on the preset paper: the preset's ink, or a colour of your own.")}
       {colours('code', 'Inline code', "Code inside Claude's sentences, like `this`: the preset's accent, or a colour of your own. Only those lines are redrawn; the rest of a reply stays Claude Code's.")}
       {group(
+        'Calm',
+        [pick('calm-on', 'on', settings.calm, 'calm on'), pick('calm-off', 'off', !settings.calm, 'calm off')],
+        "The spinner's words and the turn footer in the preset's quiet voice.",
+      )}
+      {group(
+        'Icons',
+        [
+          pick('icons-unicode', 'unicode', settings.icons === 'unicode', 'icons unicode'),
+          pick('icons-ascii', 'ascii', settings.icons === 'ascii', 'icons ascii'),
+        ],
+        'The dots and marks the skin draws: unicode shapes, or plain ASCII for a font that lacks them.',
+      )}
+      {group(
         'Tables',
         [
-          pick('tables-on', 'on', settings.tables !== 'off', 'tables box'),
+          pick('tables-on', 'grid', settings.tables === 'box', 'tables box'),
+          pick('tables-text', 'text', settings.tables === 'text', 'tables text'),
           pick('tables-off', 'off', settings.tables === 'off', 'tables off'),
         ],
         settings.tables === 'off'
@@ -369,10 +419,20 @@ export async function drawPane($: Parameters<DrawPaneHook>[0], e: Parameters<Dra
           ),
         ),
         Object.keys(settings.looks).length === 0
-          ? 'Save the preset, mode and colours you have now with /cozy save <name>; they come back here as one button.'
-          : 'A preset, a mode and your colours, as saved. /cozy save <name> adds the current one; /cozy forget <name> drops one.',
+          ? 'Save the preset, mode and colours you have now under a name; they come back here as one button.'
+          : 'A preset, a mode and your colours, as saved. Save adds the current one; ✕ drops one.',
       )}
-      <Text dimColor>Any other colour: /cozy color you|code #rrggbb</Text>
+      {Object.keys(settings.looks).length === 0 ? null : group(
+        'Forget a look',
+        Object.keys(settings.looks).map(name => pick(`forget-${name}`, `✕ ${name}`, false, `forget ${name}`)),
+      )}
+      {Input === undefined ? null : (
+        <Box flexDirection="column" gap="sm">
+          <Input key="look-name" label="Save as" placeholder="a name: night-work" value={draft.look} onInput={(v: string) => void setDraft({ look: v })} onSubmit={(v: string) => void submit('look', v)} />
+          <Input key="color-you" label="Your text" placeholder="any colour: #rrggbb" value={draft.you} onInput={(v: string) => void setDraft({ you: v })} onSubmit={(v: string) => void submit('you', v)} />
+          <Input key="color-code" label="Inline code" placeholder="any colour: #rrggbb" value={draft.code} onInput={(v: string) => void setDraft({ code: v })} onSubmit={(v: string) => void submit('code', v)} />
+        </Box>
+      )}
     </Box>
   )
 }

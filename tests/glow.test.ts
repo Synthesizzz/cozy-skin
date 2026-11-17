@@ -6,6 +6,7 @@ import { GLOW_SCENE, SPARKLE_MS, glowSvg, nextPhase, wantsGlow } from '../hooks/
 import type { GlowPhase } from '../hooks/glow'
 import { presetOf } from '../hooks/presets'
 import { SETTINGS_KEY, sane } from '../hooks/settings'
+import { press } from './press'
 
 const PLUGIN = 'cozy-skin'
 const START = { cwd: '/', surface: 'desktop', isInteractive: true } as const
@@ -161,11 +162,11 @@ test('/cozy themes glow sets it, and off clears it', async ($, on) => {
 
   await $.session.start(START)
   expect(w.calls).toEqual([])
-  const turnedOn = await $.command.run({ ...TYPED, command: 'cozy', args: 'themes glow' })
+  const turnedOn = { text: await press($, 'themes glow') }
 
   expect((w.last() as ThemeSetArgs).backdrop).toMatchObject({ scene: GLOW_SCENE })
-  expect(JSON.stringify(turnedOn)).toContain('Backdrop: glow')
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'themes off' })
+  expect(JSON.stringify(turnedOn)).toContain('Glow (')
+  await press($, 'themes off')
   expect(w.last()).toBe('clear')
 })
 

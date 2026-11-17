@@ -1,6 +1,7 @@
 import { atom, read } from 'claude-code'
 import type { MatchedHook } from 'claude-code'
 import { resolveColor } from './colors'
+import { readable } from './contrast'
 import { presetOf } from './presets'
 import { hasImage } from './prompt-images'
 import { agoLabel, sentAt } from './prompt-times'
@@ -46,9 +47,15 @@ export async function drawPrompt($: Parameters<DrawPromptHook>[0], e: Parameters
   }
 
   const { Box, Button, Text } = $.ui.resolve(e)
-  const color = picked === null ? look.palette.fg : resolveColor(picked, live.mode)
-  const mark = settings.icons === 'ascii' ? '>' : '›'
   const p = look.palette
+  // The backdrop (mode auto) paints the window in the preset's paper: a bubble
+  // on that same paper would vanish, so it takes the surface tone instead and
+  // its ink is kept readable on it.
+  const isOnBackdrop = settings.backdrop !== 'off' && settings.mode === 'auto'
+  const fill = isOnBackdrop ? p.surface : p.bg
+  const wanted = picked === null ? p.fg : resolveColor(picked, live.mode)
+  const color = isOnBackdrop ? readable(wanted, fill) : wanted
+  const mark = settings.icons === 'ascii' ? '>' : '›'
 
   // The desktop draws a prompt as a rounded bubble on the right: keep that
   // shape, on the preset's paper (`bg`), which every named shade reads on.
@@ -95,8 +102,8 @@ export async function drawPrompt($: Parameters<DrawPromptHook>[0], e: Parameters
     return (
       <Box key={`you-${hashOf(text)}`} flexDirection="row" justifyContent="flex-end" marginRight="lg" paddingBottom="xl">
         <Box width="20%" flexShrink={0} />
-        <Box flexShrink={1} borderStyle="round" borderColor={p.bg} backgroundColor={p.bg} paddingX="lg" paddingY="sm">
-          <Text color={color} backgroundColor={p.bg} wrap="wrap">
+        <Box flexShrink={1} borderStyle="round" borderColor={fill} backgroundColor={fill} paddingX="lg" paddingY="sm">
+          <Text color={color} backgroundColor={fill} wrap="wrap">
             {text}
           </Text>
         </Box>

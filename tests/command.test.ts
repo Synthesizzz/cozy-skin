@@ -3,6 +3,7 @@ import { expect, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 import { applyTheme, describe, parseTheme } from '../hooks/command'
 import { DEFAULTS, SETTINGS_KEY, sane } from '../hooks/settings'
+import { press } from './press'
 
 const START = { cwd: '/', surface: 'terminal', isInteractive: true } as const
 const TYPED = { origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 80 } } as const
@@ -18,7 +19,6 @@ test('parseTheme reads each form, in any case', () => {
   expect(parseTheme('calm on')).toEqual({ kind: 'calm', on: true })
   expect(parseTheme('CALM OFF')).toEqual({ kind: 'calm', on: false })
   expect(parseTheme('icons ascii')).toEqual({ kind: 'icons', icons: 'ascii' })
-  expect(parseTheme('terminal install')).toEqual({ kind: 'terminal-install' })
 })
 
 test('parseTheme names the presets in an error', () => {
@@ -152,42 +152,40 @@ test('/cozy nord is kept for the next session', async ($: Engine, on) => {
   const m = mount(on)
 
   await $.session.start(START)
-  const said = await $.command.run({ ...TYPED, command: 'cozy', args: 'nord' })
+  const said = { text: await press($, 'nord') }
 
-  expect(said.text).toContain('nord')
+  expect(said.text).toContain('In use: Nord')
   expect((m.store[SETTINGS_KEY] as { preset: string }).preset).toBe('nord')
 
   // A new session starts from what was stored, not from the live value.
   await $.session.start(START)
-  const again = await $.command.run({ ...TYPED, command: 'cozy', args: '' })
+  const again = { text: await press($, '') }
 
-  expect(again.text).toContain('Preset: nord')
+  expect(again.text).toContain('In use: Nord')
 })
 
 test('a stored preset is read when a session starts', async ($: Engine, on) => {
   mount(on, { stored: { preset: 'nord', mode: 'light', tables: 'text' } })
 
   await $.session.start(START)
-  const said = await $.command.run({ ...TYPED, command: 'cozy', args: '' })
+  const said = { text: await press($, '') }
 
-  expect(said.text).toContain('Preset: nord')
-  expect(said.text).toContain('Mode: light')
-  expect(said.text).toContain('Tables: text')
+  expect(said.text).toContain('In use: Nord, light')
 })
 
 test('the first switch saves the Claude Code theme and /cozy off puts it back', async ($: Engine, on) => {
   const m = mount(on, { theme: 'dark-daltonized' })
 
   await $.session.start(START)
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'kindle' })
+  await press($, 'kindle')
   expect(m.state.theme).toBe('dark')
   expect((m.store[SETTINGS_KEY] as { savedTheme: string }).savedTheme).toBe('dark-daltonized')
 
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'light' })
+  await press($, 'light')
   expect(m.state.theme).toBe('light')
   expect((m.store[SETTINGS_KEY] as { savedTheme: string }).savedTheme).toBe('dark-daltonized')
 
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'off' })
+  await press($, 'off')
   expect(m.state.theme).toBe('dark-daltonized')
   expect(m.store[SETTINGS_KEY]).toMatchObject({ enabled: false, savedTheme: null })
 })
@@ -196,7 +194,7 @@ test('a denied theme change is reported, not thrown', async ($: Engine, on) => {
   const m = mount(on, { deny: 'locked by policy' })
 
   await $.session.start(START)
-  const said = await $.command.run({ ...TYPED, command: 'cozy', args: 'dark' })
+  const said = { text: await press($, 'dark') }
 
   expect(said.text).toContain('locked by policy')
   expect(m.state.theme).toBe('dark-daltonized')
@@ -207,7 +205,7 @@ test('/cozy auto follows the Windows mode', async ($: Engine, on) => {
   const m = mount(on, { light: '0x1' })
 
   await $.session.start(START)
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'auto' })
+  await press($, 'auto')
   expect(m.state.theme).toBe('light')
 })
 
@@ -215,7 +213,7 @@ test('/cozy auto falls back to dark when reg query fails', async ($: Engine, on)
   const m = mount(on, { reg: 'fail', light: '0x1', theme: 'light' })
 
   await $.session.start(START)
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'auto' })
+  await press($, 'auto')
   expect(m.state.theme).toBe('dark')
 })
 
@@ -223,7 +221,7 @@ test('/cozy auto falls back to dark when reg query times out', async ($: Engine,
   const m = mount(on, { reg: 'throw', light: '0x1', theme: 'light' })
 
   await $.session.start(START)
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'auto' })
+  await press($, 'auto')
   expect(m.state.theme).toBe('dark')
 })
 
@@ -282,15 +280,15 @@ test('a theme picked by hand after /cozy is left alone at session start', async 
   expect(m.state.theme).toBe('light-ansi')
 })
 
-test('calm, icons, tables and terminal install never touch the Claude Code theme', async ($: Engine, on) => {
+test('calm, icons and tables never touch the Claude Code theme', async ($: Engine, on) => {
   // The mode is fixed so session start leaves the theme alone, and the theme
   // is not the one the preset would pick, so any sync would show as a change.
   const m = mount(on, { stored: { mode: 'dark', ...TOOK_OVER }, theme: 'dark' })
 
   await $.session.start(START)
   m.state.theme = 'light-ansi'
-  for (const args of ['calm on', 'icons ascii', 'tables text', 'terminal install']) {
-    await $.command.run({ ...TYPED, command: 'cozy', args })
+  for (const args of ['calm on', 'icons ascii', 'tables text']) {
+    await press($, args)
   }
 
   expect(m.state.sets).toBe(0)
@@ -302,7 +300,7 @@ test('an explicit /cozy that needs no change still takes the theme over', async 
   const m = mount(on, { theme: 'dark' })
 
   await $.session.start(START)
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'dark' })
+  await press($, 'dark')
 
   expect(m.state.sets).toBe(0)
   expect(m.store[SETTINGS_KEY]).toMatchObject({ savedTheme: 'dark', appliedTheme: 'dark' })
@@ -312,12 +310,12 @@ test('a cozy theme is never kept as the saved theme', async ($: Engine, on) => {
   const m = mount(on, { theme: 'cozy-skin:cozy-kindle-light', extra: ['cozy-skin:cozy-kindle-light', 'cozy-skin:cozy-nord-dark'] })
 
   await $.session.start(START)
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'nord' })
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'dark' })
+  await press($, 'nord')
+  await press($, 'dark')
   expect(m.state.theme).toBe('cozy-skin:cozy-nord-dark')
   expect((m.store[SETTINGS_KEY] as { savedTheme: unknown }).savedTheme).toBe('light')
 
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'off' })
+  await press($, 'off')
   expect(m.state.theme).toBe('light')
 })
 
@@ -331,13 +329,13 @@ test('a session-start sync and /cozy nord at once keep the saved theme', async (
   })
 
   await $.session.start(START)
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'nord' })
+  await press($, 'nord')
   await settle($, () => false)
 
   expect(m.state.theme).toBe('cozy-nord-light')
   expect(m.store[SETTINGS_KEY]).toMatchObject({ preset: 'nord', savedTheme: 'dark-daltonized', appliedTheme: 'cozy-nord-light' })
 
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'off' })
+  await press($, 'off')
   expect(m.state.theme).toBe('dark-daltonized')
 })
 
@@ -345,12 +343,12 @@ test('a first /cozy nord racing session start keeps the original theme', async (
   const m = mount(on, { stored: { mode: 'auto' }, light: '0x1', delayMs: 5, extra: ['cozy-nord-light', 'cozy-nord-dark'] })
 
   await $.session.start(START)
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'nord' })
+  await press($, 'nord')
   await settle($, () => false)
 
   expect(m.store[SETTINGS_KEY]).toMatchObject({ savedTheme: 'dark-daltonized' })
 
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'off' })
+  await press($, 'off')
   expect(m.state.theme).toBe('dark-daltonized')
 })
 
@@ -358,10 +356,9 @@ test('a refused command name does not stop the settings from loading', async ($:
   mount(on, { refuse: 'a built-in command has this name', stored: { preset: 'nord', mode: 'light' } })
 
   await $.session.start(START)
-  const said = await $.command.run({ ...TYPED, command: 'cozy', args: '' })
+  const said = { text: await press($, '') }
 
-  expect(said.text).toContain('Preset: nord')
-  expect(said.text).toContain('Mode: light')
+  expect(said.text).toContain('In use: Nord, light')
 })
 
 test('a failing /cozy answers with the error instead of throwing', async ($: Engine, on) => {
@@ -369,9 +366,9 @@ test('a failing /cozy answers with the error instead of throwing', async ($: Eng
 
   await $.session.start(START)
   m.state.storeFails = true
-  const said = await $.command.run({ ...TYPED, command: 'cozy', args: 'calm on' })
+  const said = { text: await press($, 'calm on') }
 
-  expect(said.text).toStartWith('cozy-skin: ')
+  expect(said.text).toContain('cozy-skin: ')
   expect(said.text).toContain('store is read-only')
 })
 
@@ -388,17 +385,17 @@ test('a switch picks the plugin theme when Claude Code lists it', async ($: Engi
   const m = mount(on, { theme: 'dark-daltonized', extra: ['cozy-kindle-dark', 'cozy-kindle-light', 'cozy-nord-dark'] })
 
   await $.session.start(START)
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'kindle' })
+  await press($, 'kindle')
   expect(m.state.theme).toBe('cozy-kindle-dark')
 
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'light' })
+  await press($, 'light')
   expect(m.state.theme).toBe('cozy-kindle-light')
 
   // No cozy-nord-light is listed: the built-in light theme is the fallback.
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'nord' })
+  await press($, 'nord')
   expect(m.state.theme).toBe('light')
 
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'off' })
+  await press($, 'off')
   expect(m.state.theme).toBe('dark-daltonized')
 })
 
@@ -406,16 +403,16 @@ test('/cozy says so when its theme is not listed and the built-in one is used', 
   const m = mount(on, { theme: 'dark-daltonized' })
 
   await $.session.start(START)
-  const said = await $.command.run({ ...TYPED, command: 'cozy', args: 'kindle light' })
+  const said = { text: await press($, 'kindle light') }
 
   expect(m.state.theme).toBe('light')
   expect(said.text).toContain('cozy-kindle-light is not in its theme list, so the built-in "light" theme is used instead.')
 
   // Already on the fallback: nothing to change, the note still comes.
-  const again = await $.command.run({ ...TYPED, command: 'cozy', args: 'light' })
+  const again = { text: await press($, 'light') }
   expect(again.text).toContain('cozy-kindle-light is not in its theme list')
 
-  const off = await $.command.run({ ...TYPED, command: 'cozy', args: 'off' })
+  const off = { text: await press($, 'off') }
   expect(off.text).not.toContain('theme list')
 })
 
@@ -423,7 +420,7 @@ test('/cozy adds no fallback note when its theme is listed', async ($: Engine, o
   mount(on, { theme: 'dark-daltonized', extra: ['cozy-kindle-light'] })
 
   await $.session.start(START)
-  const said = await $.command.run({ ...TYPED, command: 'cozy', args: 'kindle light' })
+  const said = { text: await press($, 'kindle light') }
 
   expect(said.text).not.toContain('theme list')
 })
@@ -432,9 +429,9 @@ test('/cozy kindle light switches preset and mode in one go', async ($: Engine, 
   const m = mount(on, { theme: 'dark-daltonized', extra: ['cozy-kindle-dark', 'cozy-kindle-light'] })
 
   await $.session.start(START)
-  const said = await $.command.run({ ...TYPED, command: 'cozy', args: 'kindle light' })
+  const said = { text: await press($, 'kindle light') }
 
-  expect(said.text).toContain('Mode: light')
+  expect(said.text).toContain('In use: Kindle, light')
   expect(m.state.theme).toBe('cozy-kindle-light')
   expect(m.store[SETTINGS_KEY]).toMatchObject({ preset: 'kindle', mode: 'light', savedTheme: 'dark-daltonized' })
 })
@@ -443,6 +440,6 @@ test('a plugin theme listed under a prefixed id is found by its slug', async ($:
   const m = mount(on, { theme: 'dark-daltonized', extra: ['cozy-skin:cozy-kindle-dark'] })
 
   await $.session.start(START)
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'kindle' })
+  await press($, 'kindle')
   expect(m.state.theme).toBe('cozy-skin:cozy-kindle-dark')
 })

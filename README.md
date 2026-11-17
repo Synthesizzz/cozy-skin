@@ -2,7 +2,7 @@
 
 Cozy colours, nicer tables and calmer spinner words for Claude Code.
 
-> **Windows only for now.** Tested with Claude Code 2.1.325 on Windows 11, in the terminal and the desktop app. On macOS or Linux the colours and tables still work, but auto mode, the CSV/XLSX Save dialog, prompt times and Windows Terminal schemes do not.
+> **Windows only for now.** Tested with Claude Code 2.1.325 on Windows 11, in the terminal and the desktop app. On macOS or Linux the colours and tables still work, but auto mode, the CSV/XLSX Save dialog and prompt times do not.
 
 ## Install
 
@@ -12,7 +12,7 @@ In a Claude Code terminal session:
 /plugin install cozy-skin --marketplace Synthesizzz/cozy-skin
 ```
 
-Answer `y` to add the marketplace, pick a scope, then run `/cozy panel`.
+Answer `y` to add the marketplace, pick a scope, then run `/cozy`.
 
 Before uninstalling, run `/cozy off` to get your Claude Code theme back.
 
@@ -23,40 +23,28 @@ Before uninstalling, run `/cozy off` to get your Claude Code theme back.
 - **Your prompt** in a bubble on the preset's paper. Hover it for when you sent it, copy and edit.
 - **Tool rows** get a coloured dot by kind (read, write, run, search, web, MCP; red on failure).
 - **Spinner words** from the preset. Calm mode keeps one word per turn.
-- **Windows Terminal schemes** to match each preset.
 
 ## Commands
 
 | Command | Does |
 |---|---|
-| `/cozy` | Show current settings |
-| `/cozy panel` | Click-to-change panel |
-| `/cozy <preset> [light\|dark\|auto]` | Pick a preset, and optionally the mode |
-| `/cozy light` · `dark` · `auto` | Mode (`auto` follows Windows) |
-| `/cozy backdrop paper` · `glow` · `off` | The preset's paper behind the whole desktop window, in mode `auto` (needs Claude Code 2.1.323 or newer). `glow` adds soft glows in the preset's accent that drift at the sides, move faster while Claude works and sparkle when a turn is done. Also `/cozy themes glow` · `off`, and `/cozy themes` to list |
-| `/cozy on` · `off` | Turn the skin on or off (`off` restores your theme) |
-| `/cozy color you\|code <name>\|#rrggbb\|off` | Colour of your text or of inline code |
-| `/cozy tables box\|text\|off` | Table style |
-| `/cozy tools on\|off` | Dots on tool rows |
-| `/cozy bubble cozy\|app` | Your prompt in cozy's bubble or the app's own |
-| `/cozy calm on\|off` | One spinner word per turn |
-| `/cozy icons unicode\|ascii` | Glyphs or plain ASCII |
-| `/cozy save\|look\|forget <name>` | Save, load or drop a look (up to 12) |
-| `/cozy terminal install` | Add the Windows Terminal schemes |
+| `/cozy` | Open the panel: every choice is a button there |
+| `/cozy off` | Turn the skin off and restore your Claude Code theme (the way out if the panel will not open) |
+
+In the panel: skin on or off, preset, mode (`auto` follows Windows), your text and inline-code colours (a name, or any `#rrggbb` typed in), calm spinner words, glyphs or plain ASCII, table style, tool-row dots, your bubble (cozy's or the app's own), the desktop backdrop (the preset's paper behind the whole window in mode `auto`, needs Claude Code 2.1.323 or newer; `glow` adds soft glows in the preset's accent that drift at the sides, move faster while Claude works and sparkle when a turn is done), and your saved looks (a name, up to 12, with ✕ to drop one).
 
 Colour names: `ink`, `rust`, `plum`, `teal`, `slate`, `olive`, `brick`, `ochre`.
 
 ## Good to know
 
-- **Bubble trade-off.** The cozy bubble has no Rewind, Fork or text selection, because the app keeps those for its own bubble. Use `/cozy bubble app` when you need them, or `/rewind`.
+- **Bubble trade-off.** The cozy bubble has no Rewind, Fork or text selection, because the app keeps those for its own bubble. Pick the app's bubble in the panel when you need them, or `/rewind`.
 - **Prompts with images** keep the app's bubble, so the picture still shows.
 - **Exports** ask where to save: the project's `cozy-exports` folder, the Save dialog, or a path you type. They always use the exact cell text, every row and column.
 - **Your theme is left alone** until you pick a preset or mode. After that it follows the skin, and `/cozy off` puts the old one back.
-- **Terminal colours:** `/cozy terminal install` writes one Windows Terminal fragment (schemes only, your profiles stay untouched). Pick the scheme in your profile's Appearance settings. When you change preset, `/cozy` also prints a PowerShell line that recolours the current tab.
 
 ## Limits
 
-A mod paints the app window only through `/cozy backdrop`, in mode `auto`, and only where the app draws it. It can't change fonts, recolour the spinner, stop the engine's shimmer, or scroll sideways. The terminal shows table cells without markdown marks; the desktop keeps them.
+A mod paints the app window only through the panel's Backdrop, in mode `auto`, and only where the app draws it. It can't change fonts, recolour the spinner, stop the engine's shimmer, or scroll sideways. The terminal shows table cells without markdown marks; the desktop keeps them.
 
 ## Developing
 

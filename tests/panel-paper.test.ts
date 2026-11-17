@@ -3,6 +3,7 @@ import { expect, test } from 'claude-code/testing'
 import { panelPaper } from '../hooks/panel-paper'
 import { PRESETS, presetOf } from '../hooks/presets'
 import { SETTINGS_KEY, sane } from '../hooks/settings'
+import { press } from './press'
 
 const START = { cwd: '/', surface: 'desktop', isInteractive: true } as const
 const TYPED = { origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 80 } } as const
@@ -52,10 +53,10 @@ test("/cozy panel in mode auto opens on the preset's paper, in a fixed mode on t
   const w = world(on, { mode: 'auto' })
 
   await $.session.start(START)
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'panel' })
+  await $.command.run({ ...TYPED, command: 'cozy', args: '' })
   expect(w.opened[0]).toEqual({ id: 'cozy-skin', backgroundColor: kindle.dark.palette.bg, focus: true })
 
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'light' })
+  await press($, 'light')
   expect(w.last()).toEqual({ id: 'cozy-skin', backgroundColor: undefined, focus: undefined })
 })
 
@@ -63,8 +64,8 @@ test('a new preset repaints the shown panel in its paper without taking the keyb
   const w = world(on, { mode: 'auto' })
 
   await $.session.start(START)
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'panel' })
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'nord' })
+  await $.command.run({ ...TYPED, command: 'cozy', args: '' })
+  await press($, 'nord')
 
   expect(w.last()).toEqual({ id: 'cozy-skin', backgroundColor: presetOf('nord')!.dark.palette.bg, focus: undefined })
 })
@@ -73,12 +74,12 @@ test('a change opens no panel that is closed or behind another tab', async ($, o
   const w = world(on, { mode: 'auto' })
 
   await $.session.start(START)
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'nord' })
+  await press($, 'nord')
   expect(w.opened).toEqual([])
 
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'panel' })
+  await $.command.run({ ...TYPED, command: 'cozy', args: '' })
   w.shown.on = false
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'sepia' })
+  await press($, 'sepia')
   expect(w.opened).toHaveLength(1)
 })
 
@@ -92,8 +93,8 @@ test('a change still lands when the app will not list its panes', async ($, on) 
   on('ui.panes', () => ({ deny: 'no panes here' }) as never)
 
   await $.session.start(START)
-  const said = await $.command.run({ ...TYPED, command: 'cozy', args: 'nord' })
+  const said = { text: await press($, 'nord') }
 
   expect(sane(kept.get(SETTINGS_KEY)).preset).toBe('nord')
-  expect(said.text).toContain('Preset: nord')
+  expect(said.text).toContain('In use: Nord')
 })

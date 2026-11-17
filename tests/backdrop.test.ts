@@ -4,6 +4,7 @@ import { BACKDROP_ID, backdropArgs, wantsBackdrop } from '../hooks/backdrop'
 import { parseTheme } from '../hooks/command'
 import { PRESETS, presetOf } from '../hooks/presets'
 import { SETTINGS_KEY, sane } from '../hooks/settings'
+import { press } from './press'
 
 const PLUGIN = 'cozy-skin'
 const START = { cwd: '/', surface: 'desktop', isInteractive: true } as const
@@ -108,20 +109,20 @@ test('/cozy backdrop paper sets it, says it is drawn, and off clears it', async 
   const w = world(on, { mode: 'auto' })
 
   await $.session.start(START)
-  const set = await $.command.run({ ...TYPED, command: 'cozy', args: 'backdrop paper' })
+  const set = { text: await press($, 'backdrop paper') }
 
   expect(sane(w.kept.get(SETTINGS_KEY)).backdrop).toBe('paper')
   expect(w.sets()).toHaveLength(1)
-  expect(set.text).toContain('Backdrop: paper (drawn behind the window)')
+  expect(set.text).toContain('Paper (drawn behind the window)')
 
-  const cleared = await $.command.run({ ...TYPED, command: 'cozy', args: 'backdrop off' })
+  const cleared = { text: await press($, 'backdrop off') }
 
   expect(sane(w.kept.get(SETTINGS_KEY)).backdrop).toBe('off')
   expect(w.last()).toBe('clear')
-  expect(cleared.text).toContain('Backdrop: off')
+  expect(cleared.text).not.toContain('Paper (')
 
   // Nothing of cozy's stands now: a later change clears nothing more.
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'calm on' })
+  await press($, 'calm on')
   expect(w.calls.filter(c => c === 'clear')).toHaveLength(1)
 })
 
@@ -130,7 +131,7 @@ test("a /cozy change with no paper wanted never clears a theme cozy did not set"
 
   await $.session.start(START)
   for (const args of ['calm on', 'nord', 'light', 'off', 'backdrop off']) {
-    await $.command.run({ ...TYPED, command: 'cozy', args })
+    await press($, args)
   }
   expect(w.calls).toEqual([])
 })
@@ -139,25 +140,25 @@ test("/cozy says why the app does not draw the backdrop, in the app's words", as
   world(on, { mode: 'auto' }, { isDrawn: false, requestId: 'backdrop', reason: 'no desktop surface is attached' })
 
   await $.session.start(START)
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'backdrop paper' })
-  const shown = await $.command.run({ ...TYPED, command: 'cozy', args: '' })
+  await press($, 'backdrop paper')
+  const shown = { text: await press($, '') }
 
-  expect(shown.text).toContain('Backdrop: paper (not drawn: no desktop surface is attached)')
+  expect(shown.text).toContain('Paper (not drawn: no desktop surface is attached)')
 })
 
 test('/cozy backdrop paper in a fixed mode keeps the setting and waits for mode auto', async ($, on) => {
   const w = world(on, { mode: 'light' })
 
   await $.session.start(START)
-  const said = await $.command.run({ ...TYPED, command: 'cozy', args: 'backdrop paper' })
+  const said = { text: await press($, 'backdrop paper') }
 
   expect(sane(w.kept.get(SETTINGS_KEY)).backdrop).toBe('paper')
   expect(w.calls).toEqual([])
-  expect(said.text).toContain('Backdrop: paper (waiting for mode auto')
+  expect(said.text).toContain('Paper (waiting for mode auto')
 
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'auto' })
+  await press($, 'auto')
   expect(w.sets()).toHaveLength(1)
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'off' })
+  await press($, 'off')
   expect(w.last()).toBe('clear')
 })
 
@@ -165,7 +166,7 @@ test("a new preset moves the backdrop's frost to its paper", async ($, on) => {
   const w = world(on, { mode: 'auto', backdrop: 'paper' })
 
   await $.session.start(START)
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'nord' })
+  await press($, 'nord')
 
   expect(tintOf(w.last())).toBe(presetOf('nord')!.dark.palette.bg)
 })

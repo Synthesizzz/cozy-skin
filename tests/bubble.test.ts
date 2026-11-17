@@ -2,6 +2,7 @@ import type { On } from 'claude-code'
 import { expect, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 import { applyTheme, describe, parseTheme } from '../hooks/command'
+import { presetOf } from '../hooks/presets'
 import { DEFAULTS, SETTINGS_KEY, sane } from '../hooks/settings'
 
 const PLUGIN = 'cozy-skin'
@@ -80,4 +81,20 @@ test('the panel switches between the cozy bubble and the app bubble', async ($, 
   expect(sane(kept.get(SETTINGS_KEY)).bubble).toBe('app')
   await ui.press({ key: 'bubble-cozy' })
   expect(sane(kept.get(SETTINGS_KEY)).bubble).toBe('cozy')
+})
+
+// The backdrop paints the window in the preset's paper; a bubble on that same
+// paper would not show. With a backdrop drawn the bubble takes the surface tone.
+test('with a backdrop the bubble is not the window paper, so it still shows', async ($, on) => {
+  const kept = world(on, { preset: 'kindle', mode: 'auto', backdrop: 'glow' })
+  const paper = presetOf('kindle')!.dark.palette
+
+  for (const backdrop of ['glow', 'paper', 'off'] as const) {
+    kept.set(SETTINGS_KEY, { mode: 'auto', preset: 'kindle', backdrop })
+    await $.session.start(START)
+    const boxes = await (await row($, 'desktop')).findAll({ type: 'Box' })
+    const fill = boxes.map(b => b.props.backgroundColor).find(c => c !== undefined)
+
+    expect(fill, backdrop).toBe(backdrop === 'off' ? paper.bg : paper.surface)
+  }
 })

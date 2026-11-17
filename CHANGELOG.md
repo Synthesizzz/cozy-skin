@@ -2,6 +2,13 @@
 
 Newest first. Versions are the plugin's (`.claude-plugin/plugin.json`).
 
+## 0.12.0 (2026-11-17)
+
+- Every setting is a button in the `/cozy` panel, and typed `/cozy` is two things: `/cozy` opens the panel and `/cozy off` turns the skin off (the way out when the panel will not open). Any other `/cozy` word, such as `/cozy nord`, answers "Use /cozy to open the panel" and changes nothing. Your stored settings and saved looks are untouched.
+- The panel gains what only the commands had: calm, icons, the text table style, a field to save the current look under a name, ✕ to forget a look, and fields for any `#rrggbb` colour (Enter keeps it; a refused name or colour is said under the header, and so are a refused or fallen-back theme change and a failed save).
+- `/cozy terminal install`, the Windows Terminal schemes and the PowerShell recolour line are gone.
+- Fixed: with the Backdrop on (paper or glow) your prompt's bubble was the same colour as the window and vanished. It now takes the preset's surface tone while the backdrop is drawn.
+
 ## 0.11.2 (2026-11-17)
 
 - The glow is part of the Backdrop and takes the preset's colours: the paper is the preset's, the glows are its accent, in light and in dark. `/cozy backdrop glow` (also `/cozy themes glow`) and a glow button beside paper in the panel, which no longer has a Themes group. A `sepia-glow` set by 0.11.0 or 0.11.1 is read as glow. Like the paper, it is drawn in mode `auto` only.

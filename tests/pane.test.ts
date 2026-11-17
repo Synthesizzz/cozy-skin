@@ -6,6 +6,7 @@ import { parseTheme } from '../hooks/command'
 import { lookPreview, presetCard } from '../hooks/pane'
 import { PRESETS, presetOf } from '../hooks/presets'
 import { SETTINGS_KEY, sane } from '../hooks/settings'
+import { press } from './press'
 
 const PLUGIN = 'cozy-skin'
 const START = { cwd: '/', surface: 'desktop', isInteractive: true } as const
@@ -69,10 +70,31 @@ test('/cozy panel opens the panel', async ($, on) => {
   const w = world(on)
 
   await $.session.start(START)
-  const said = await $.command.run({ ...TYPED, command: 'cozy', args: 'panel' })
+  const said = await $.command.run({ ...TYPED, command: 'cozy', args: '' })
 
   expect(w.opened).toEqual(['cozy-skin'])
   expect(said.text).toBe('cozy-skin panel opened.')
+})
+
+test('a typed /cozy word other than off points to the panel and changes nothing', async ($, on) => {
+  const w = world(on)
+
+  await $.session.start(START)
+  for (const args of ['nord', 'light', 'on', 'calm on', 'tables text', 'backdrop glow', 'color you plum', 'save mine', 'panel', 'terminal install']) {
+    const said = await $.command.run({ ...TYPED, command: 'cozy', args })
+
+    expect(said.text, args).toContain('Use /cozy to open the panel')
+  }
+  expect(w.kept.get(SETTINGS_KEY)).toEqual({ mode: 'light' })
+  expect(w.opened).toEqual([])
+})
+
+test('typed /cozy off turns the skin off, the way out when the panel will not open', async ($, on) => {
+  const w = world(on)
+
+  await $.session.start(START)
+  await $.command.run({ ...TYPED, command: 'cozy', args: 'off' })
+  expect(sane(w.kept.get(SETTINGS_KEY)).enabled).toBe(false)
 })
 
 test('a colour button sets that side and becomes the one in force', async ($, on) => {
@@ -97,7 +119,7 @@ test('a hand-typed hex shows as its own button', async ($, on) => {
   world(on)
 
   await $.session.start(START)
-  await $.command.run({ ...TYPED, command: 'cozy', args: 'color you #123abc' })
+  await press($, 'color you #123abc')
   const ui = await $.ui.mount(PANE)
 
   expect((await ui.find({ type: 'Button', key: 'you-custom' }))?.props.variant).toBe('primary')
@@ -194,7 +216,7 @@ test('the panel runs skin, preset, mode and palette before the colour picks', as
   // Group headings are the semibold lines.
   const headings = (await ui.findAll({ type: 'Text' })).filter(t => t.props.weight === 'semibold').map(t => t.text)
 
-  expect(headings.map(h => h.split(' ')[0])).toEqual(['Skin', 'Preset', 'Mode', 'Palette', 'Your', 'Inline', 'Tables', 'Tool', 'Your', 'Backdrop', 'Your'])
+  expect(headings.map(h => h.split(' ')[0])).toEqual(['Skin', 'Preset', 'Mode', 'Palette', 'Your', 'Inline', 'Calm', 'Icons', 'Tables', 'Tool', 'Your', 'Backdrop', 'Your'])
   // Who draws your prompt sits with the other switches, before your looks.
   expect(headings.findIndex(h => h.startsWith('Your bubble'))).toBe(headings.findIndex(h => h.startsWith('Tool')) + 1)
   // The presets sit on two shelves under one heading.
@@ -341,8 +363,11 @@ test('a look saved by name comes back as one press, and can be forgotten', async
 
   const ui = await $.ui.mount(PANE)
 
-  await $.command.run({ command: 'cozy', args: 'save night-work' } as never)
-  await $.command.run({ command: 'cozy', args: 'paper light' } as never)
+  // The name goes in the panel's own field; Enter saves it.
+  await ui.input({ key: 'look-name', text: 'night-work' })
+  expect(Object.keys(sane(w.kept.get(SETTINGS_KEY)).looks)).toEqual(['night-work'])
+  await ui.press({ key: 'preset-paper' })
+  await ui.press({ key: 'mode-light' })
   expect(sane(w.kept.get(SETTINGS_KEY)).preset).toBe('paper')
 
   await ui.press({ key: 'look-night-work' })
@@ -351,7 +376,7 @@ test('a look saved by name comes back as one press, and can be forgotten', async
   expect(back).toMatchObject({ preset: 'nord', mode: 'dark', colors: { you: 'teal', code: null } })
   expect((await ui.find({ type: 'Button', key: 'look-night-work' }))?.props.variant).toBe('primary')
 
-  await $.command.run({ command: 'cozy', args: 'forget night-work' } as never)
+  await ui.press({ key: 'forget-night-work' })
   expect(sane(w.kept.get(SETTINGS_KEY)).looks).toEqual({})
 })
 
@@ -376,7 +401,7 @@ test('the panel previews the look in its own colours, with the picked inks', asy
   expect(svg).toBeDefined()
   expect(svg).toContain(`fill="${g.bg}"`)
   expect(svg).toContain(`fill="${g.zebra}"`)
-  expect(svg).toContain('/cozy panel')
+  expect(svg).toContain('/cozy')
   // Every word in the picture reads at 4.5:1 on what it sits on.
   const preview = lookPreview(g, resolveColor('plum', 'light'), g.accent)
 
@@ -387,7 +412,7 @@ test('the panel previews the look in its own colours, with the picked inks', asy
 test('in the preview the inline code stays inside its chip and clear of the next word', () => {
   const svg = lookPreview(presetOf('kindle')!.dark.palette, '#ffffff', '#ffcc66').source
   const chip = /<rect x="(\d+)" y="41" width="(\d+)"/.exec(svg)
-  const code = /<text x="(\d+)" y="52"[^>]*textLength="(\d+)"[^>]*>\/cozy panel</.exec(svg)
+  const code = /<text x="(\d+)" y="52"[^>]*textLength="(\d+)"[^>]*>\/cozy</.exec(svg)
   const after = /<text x="(\d+)" y="52"[^>]*>then pick a look\.</.exec(svg)
 
   expect(chip && code && after).toBeTruthy()
@@ -449,4 +474,37 @@ test('the hover row says how long ago a prompt was sent', async ($, on) => {
   expect(await (await row('sent earlier')).find({ type: 'Text', text: '5 minutes ago' })).toBeDefined()
   // A prompt cozy never saw sent shows no time.
   expect(await (await row('from before')).find({ type: 'Text', text: /ago|just now/ })).toBeUndefined()
+})
+
+test('the panel has calm, icons and the text table style as buttons', async ($, on) => {
+  const w = world(on)
+
+  await $.session.start(START)
+  const ui = await $.ui.mount(PANE)
+
+  await ui.press({ key: 'calm-on' })
+  await ui.press({ key: 'icons-ascii' })
+  await ui.press({ key: 'tables-text' })
+  expect(sane(w.kept.get(SETTINGS_KEY))).toMatchObject({ calm: true, icons: 'ascii', tables: 'text' })
+  expect((await ui.find({ type: 'Button', key: 'calm-on' }))?.props.variant).toBe('primary')
+  expect((await ui.find({ type: 'Button', key: 'icons-ascii' }))?.props.variant).toBe('primary')
+  expect((await ui.find({ type: 'Button', key: 'tables-text' }))?.props.variant).toBe('primary')
+})
+
+test('any colour typed in the panel is kept, and a bad one is refused under the header', async ($, on) => {
+  const w = world(on)
+
+  await $.session.start(START)
+  const ui = await $.ui.mount(PANE)
+
+  await ui.input({ key: 'color-you', text: '#123abc' })
+  expect(sane(w.kept.get(SETTINGS_KEY)).colors.you).toBe('#123abc')
+
+  await ui.input({ key: 'color-code', text: 'pinkish' })
+  expect(sane(w.kept.get(SETTINGS_KEY)).colors.code).toBe(null)
+  expect((await ui.findAll({ type: 'Text' })).some(t => t.text.includes('"pinkish" is not a colour'))).toBe(true)
+
+  await ui.input({ key: 'look-name', text: 'nord' })
+  expect(Object.keys(sane(w.kept.get(SETTINGS_KEY)).looks)).toEqual([])
+  expect((await ui.findAll({ type: 'Text' })).some(t => t.text.includes("is a preset's name"))).toBe(true)
 })

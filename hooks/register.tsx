@@ -4,21 +4,16 @@ import { applyTheme, backdropLine, describe, parseTheme } from './command'
 import { readWindowsLight, resolveMode } from './mode'
 import { panelPaper, repaintPanel } from './panel-paper'
 import { backdropNote, drawBackdrop, forgetBackdrop, glowEnd, glowStart, syncBackdrop } from './backdrop'
-import { PRESETS } from './presets'
 import type { Mode } from './presets'
 import { LIVE_INIT, SETTINGS_KEY, sane } from './settings'
 import type { Settings } from './settings'
 import { drawDone, drawSpinner, trackTurn } from './spinner'
 import { drawReply } from './table-render'
-import { installFragment, switchHint } from './terminal'
 import { PANE, drawPane } from './pane'
 import { drawPrompt } from './user-render'
 import { drawToolGroup, drawToolUse } from './tool-render'
 import { IMAGES_KEY, remember, saneImages } from './prompt-images'
 import { SENT_KEY, mergeSent, parseTranscriptTimes, rememberSent, saneSent, transcriptPath } from './prompt-times'
-
-// The live switch is not possible from a mod (see switchHint), so the reply hands over a line to paste.
-const hintFor = (settings: Settings, mode: Mode): string => switchHint(settings.preset, mode, settings.enabled)
 
 // The `live` atom (see LIVE_INIT in settings.ts). The validator reads a write
 // only where the atom is declared in the same file.
@@ -178,7 +173,7 @@ async function keep($: EngineInterface, settings: Settings, mode: Mode) {
   return syncBackdrop($, settings, mode, true)
 }
 
-async function runCozy($: EngineInterface, args: string): Promise<{ text: string }> {
+async function runCozy($: EngineInterface, args: string): Promise<{ text: string; notes?: string }> {
   const action = parseTheme(args)
 
   if (action.kind === 'error') {
@@ -189,7 +184,7 @@ async function runCozy($: EngineInterface, args: string): Promise<{ text: string
 
     const note = await backdropNote($).catch(() => undefined)
 
-    return { text: [describe(live.settings, live.mode, note), hintFor(live.settings, live.mode)].filter(Boolean).join('\n') }
+    return { text: describe(live.settings, live.mode, note) }
   }
   if (action.kind === 'themes' && action.themes === undefined) {
     const live = await read($, settingsAtom)
@@ -201,9 +196,6 @@ async function runCozy($: EngineInterface, args: string): Promise<{ text: string
         backdropLine(live.settings, note ?? { isDrawn: false, reason: null, isSet: false }),
       ].join('\n'),
     }
-  }
-  if (action.kind === 'terminal-install') {
-    return { text: await installFragment($, PRESETS) }
   }
   if (action.kind === 'panel') {
     const live = await read($, settingsAtom)
@@ -227,11 +219,27 @@ async function runCozy($: EngineInterface, args: string): Promise<{ text: string
 
     const note = await keep($, synced.settings, mode)
 
-    // The paste line follows a change of preset, mode or switch, not a table or icon tweak.
-    const hint = moved ? hintFor(synced.settings, mode) : ''
-
-    return { text: [describe(synced.settings, mode, note), synced.note, hint].filter(Boolean).join('\n') }
+    // `notes` is what the panel shows after a press: the theme refusals and fallbacks.
+    return {
+      text: [describe(synced.settings, mode, note), synced.note].filter(Boolean).join(String.fromCharCode(10)),
+      ...(synced.note === null ? {} : { notes: synced.note }),
+    }
   })
+}
+
+// What a typed `/cozy` does: open the panel, or `off` as the way out when the
+// panel will not open. Every other choice is a button in the panel (its press
+// goes through runCozy), so any other word points there and changes nothing.
+async function typed($: EngineInterface, args: string): Promise<{ text: string }> {
+  const word = args.trim().toLowerCase()
+
+  if (word === '') {
+    return runCozy($, 'panel')
+  }
+  if (word === 'off') {
+    return runCozy($, 'off')
+  }
+  return { text: 'Use /cozy to open the panel: every choice is a button there. /cozy off turns the skin off.' }
 }
 
 // The session-start sync, once Windows has answered: the mode follows it, and
@@ -264,9 +272,8 @@ export const register: Register = on => {
     try {
       await $.command.register({
         name: COMMAND,
-        description: 'Switch the cozy-skin preset, mode, text colours and table style (/cozy panel to click)',
-        argumentHint:
-          '[<preset> | light | dark | auto | on | off | panel | color you|code <name>|#rrggbb|off | save|look|forget <name> | calm on|off | icons unicode|ascii | tables box|text|off | tools on|off | bubble cozy|app | backdrop off|paper|glow | themes [glow|off] | terminal install]',
+        description: 'Open the cozy-skin panel: every choice is a button there (/cozy off turns the skin off)',
+        argumentHint: '[off]',
       })
     } catch {
       // The skin still draws: only the command is missing.
@@ -403,7 +410,7 @@ export const register: Register = on => {
   // A failure is the command's answer, never a thrown error.
   on('command.run', { command: COMMAND }, async ($, e) => {
     try {
-      return await runCozy($, e.args)
+      return await typed($, e.args)
     } catch (error) {
       return { text: `cozy-skin: ${messageOf(error)}` }
     }
