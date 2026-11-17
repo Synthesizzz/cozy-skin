@@ -135,6 +135,8 @@ test('the line under Mode says what each mode does on the desktop; the terminal 
   expect(modeNote('light', 'light', 'desktop')).toBe("The whole app in the preset's light palette.")
   expect(modeNote('dark', 'dark', 'desktop')).toBe("The whole app in the preset's dark palette.")
   expect(modeNote('light', 'light', 'terminal')).toBeUndefined()
-  expect(modeNote('auto', 'dark', 'desktop')).toBe("Follows the app's own light or dark, in the preset's palette (now dark).")
+  expect(modeNote('auto', 'dark', 'desktop')).toBe(
+    "Follows Windows' light or dark, in the preset's palette (now dark). Set the app's appearance to follow the system so the two match.",
+  )
   expect(modeNote('auto', 'light', 'terminal')).toBe("Follows the app's own light or dark theme (now light).")
 })

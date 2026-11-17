@@ -137,8 +137,10 @@ export type Choose = (args: string) => Promise<unknown>
 // whole app in the preset's palette of that mode (see fixed-look.ts).
 export function modeNote(setting: Mode | 'auto', mode: Mode, surface: string): string | undefined {
   if (setting === 'auto') {
+    // cozy reads Windows: no call tells a mod the app's own appearance, so the
+    // app matches only when its appearance follows the system (Decisions 2026-11-17).
     return surface === 'desktop'
-      ? `Follows the app's own light or dark, in the preset's palette (now ${mode}).`
+      ? `Follows Windows' light or dark, in the preset's palette (now ${mode}). Set the app's appearance to follow the system so the two match.`
       : `Follows the app's own light or dark theme (now ${mode}).`
   }
   return surface === 'desktop' ? `The whole app in the preset's ${setting} palette.` : undefined
