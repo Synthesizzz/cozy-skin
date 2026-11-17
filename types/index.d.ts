@@ -14,8 +14,7 @@ declare module 'claude-code' {
           tables: 'box' | 'text' | 'off'
           tools: 'on' | 'off'
           bubble: 'cozy' | 'app'
-          backdrop: 'off' | 'paper'
-          themes: 'off' | 'sepia-glow'
+          backdrop: 'off' | 'paper' | 'glow'
           enabled: boolean
           savedTheme: string | null
           appliedTheme: string | null
