@@ -9,6 +9,8 @@ import { NAMED, isHex, resolveColor } from './colors'
 import { backdropLine, parseTheme } from './command'
 import { readable } from './contrast'
 import { PRESETS, presetOf } from './presets'
+import { backdropSample, bubbleSample, calmLine, iconsLine, tablesSample, toolsSample } from './samples'
+import type { Sample } from './samples'
 import type { Palette } from './presets'
 import { LIVE_INIT } from './settings'
 import type { Side } from './settings'
@@ -301,7 +303,7 @@ export async function drawPane($: Parameters<DrawPaneHook>[0], e: Parameters<Dra
 
   // One line per small setting: its name, then its buttons. A note shows only
   // when it has something to say about the choice in force.
-  const row = (label: string, picks: RenderChildren, note?: string) => (
+  const row = (label: string, picks: RenderChildren, note?: string, extra?: RenderChildren) => (
     <Box key={`row-${label}`} flexDirection="column">
       <Box columnGap="md" rowGap="xs" alignItems="center" flexWrap="wrap">
         <Text weight="semibold">{label}</Text>
@@ -310,8 +312,19 @@ export async function drawPane($: Parameters<DrawPaneHook>[0], e: Parameters<Dra
         </Box>
       </Box>
       {note === undefined ? null : <Text dimColor>{note}</Text>}
+      {extra === undefined ? null : <Box paddingTop="xs">{extra}</Box>}
     </Box>
   )
+  // A picture of what a setting does, in the look in force; the terminal draws none.
+  const sampleSvg = (alt: string, made: Sample) => {
+    if (!isVector) {
+      return undefined
+    }
+    const { Svg } = $.ui.resolve(e)
+
+    return <Svg key={alt} source={made.source} alt={alt} width={made.width} height={made.height} />
+  }
+  const sampleText = (key: string, text: string) => <Text key={key} dimColor>{text}</Text>
   const tab = (key: 'look' | 'colours' | 'details', label: string) => (
     <Button key={`tab-${key}`} label={label} variant={draft.tab === key ? 'primary' : 'secondary'} onPress={() => void setDraft({ tab: key })}>
       <Text>{label}</Text>
@@ -398,11 +411,11 @@ export async function drawPane($: Parameters<DrawPaneHook>[0], e: Parameters<Dra
 
   const detailsTab = (
     <Box flexDirection="column" gap="md">
-      {row('Calm', [pick('calm-on', 'on', settings.calm, 'calm on'), pick('calm-off', 'off', !settings.calm, 'calm off')], settings.calm ? 'One spinner word per turn.' : undefined)}
+      {row('Calm', [pick('calm-on', 'on', settings.calm, 'calm on'), pick('calm-off', 'off', !settings.calm, 'calm off')], undefined, sampleText('calm-sample', calmLine(preset?.[mode].spinner ?? [], settings.calm, settings.icons === 'ascii')))}
       {row('Icons', [
         pick('icons-unicode', 'unicode', settings.icons === 'unicode', 'icons unicode'),
         pick('icons-ascii', 'ascii', settings.icons === 'ascii', 'icons ascii'),
-      ])}
+      ], undefined, sampleText('icons-sample', iconsLine(settings.icons === 'ascii')))}
       {row(
         'Tables',
         [
@@ -411,8 +424,9 @@ export async function drawPane($: Parameters<DrawPaneHook>[0], e: Parameters<Dra
           pick('tables-off', 'off', settings.tables === 'off', 'tables off'),
         ],
         settings.tables === 'off' ? "Claude Code draws tables its own way, with no Copy, CSV or XLSX." : undefined,
+        p === undefined ? undefined : sampleSvg('tables sample', tablesSample(p, settings.tables)),
       )}
-      {row('Tool rows', [pick('tools-on', 'on', settings.tools === 'on', 'tools on'), pick('tools-off', 'off', settings.tools === 'off', 'tools off')])}
+      {row('Tool rows', [pick('tools-on', 'on', settings.tools === 'on', 'tools on'), pick('tools-off', 'off', settings.tools === 'off', 'tools off')], undefined, p === undefined ? undefined : sampleSvg('tools sample', toolsSample(p, settings.tools === 'on', settings.icons === 'ascii')))}
       {row(
         'Your bubble',
         [
@@ -422,6 +436,7 @@ export async function drawPane($: Parameters<DrawPaneHook>[0], e: Parameters<Dra
         settings.bubble === 'app'
           ? "Claude Code's own bubble: Rewind, Fork, text selection."
           : 'Cozy has no Rewind, Fork or text selection: pick app for those.',
+        p === undefined ? undefined : sampleSvg('bubble sample', bubbleSample(p, settings.bubble)),
       )}
       {e.surface !== 'desktop'
         ? null
@@ -435,6 +450,7 @@ export async function drawPane($: Parameters<DrawPaneHook>[0], e: Parameters<Dra
             settings.backdrop === 'off'
               ? "The window on the preset's paper (glow: soft glows that drift and brighten while Claude works). Mode auto only."
               : backdropLine(settings, drawn ?? { isDrawn: false, reason: null, isSet: false }).replace(/^Backdrop: (paper|glow) /, (_, kind: string) => `${kind[0]?.toUpperCase()}${kind.slice(1)} `),
+            p === undefined ? undefined : sampleSvg('backdrop sample', backdropSample(p, settings.backdrop)),
           )}
     </Box>
   )

@@ -544,3 +544,42 @@ test('the panel is three tabs: the look first, then colours, then the details', 
   await only(['you-plum', 'code-teal'], ['preset-nord', 'calm-on'])
   // A press on a tab never changes a setting.
 })
+
+test('the Details tab draws a sample under each setting, and it follows the choice', async ($, on) => {
+  world(on)
+
+  await $.session.start(START)
+  const ui = await $.ui.mount(PANE)
+  const sample = async (alt: string) => (await ui.findAll({ type: 'Svg' })).find(s => s.props.alt === alt)?.props.source as string | undefined
+  const said = async (part: string) => (await ui.findAll({ type: 'Text' })).some(t => t.text.includes(part))
+  const zebra = presetOf('kindle')!.light.palette.zebra
+
+  await ui.press({ key: 'tab-details' })
+  for (const alt of ['tools sample', 'tables sample', 'bubble sample', 'backdrop sample']) {
+    expect(await sample(alt), alt).toBeDefined()
+  }
+  expect(await said('a call done')).toBe(true)
+  expect(await said('→')).toBe(true)
+
+  // Each follows its own setting.
+  expect(await sample('tables sample')).toContain(zebra)
+  await ui.press({ key: 'tables-text' })
+  expect(await sample('tables sample')).not.toContain(zebra)
+  await ui.press({ key: 'bubble-app' })
+  expect(await sample('bubble sample')).toContain('Rewind')
+  await ui.press({ key: 'backdrop-glow' })
+  expect(await sample('backdrop sample')).toContain('radialGradient')
+  await ui.press({ key: 'tools-off' })
+  expect(await sample('tools sample')).not.toContain('<circle')
+  await ui.press({ key: 'calm-on' })
+  expect(await said('→')).toBe(false)
+  await ui.press({ key: 'icons-ascii' })
+  expect(await said('o  a call running')).toBe(true)
+
+  // The terminal has no pictures: its lines are text, and no backdrop.
+  const terminal = await $.ui.mount({ ...PANE, surface: 'terminal' })
+
+  await terminal.press({ key: 'tab-details' })
+  expect(await terminal.find({ type: 'Svg' })).toBeUndefined()
+  expect((await terminal.findAll({ type: 'Text' })).some(t => t.text.includes('a call running'))).toBe(true)
+})

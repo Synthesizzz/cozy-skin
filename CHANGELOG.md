@@ -2,6 +2,10 @@
 
 Newest first. Versions are the plugin's (`.claude-plugin/plugin.json`).
 
+## 0.12.2 (2026-11-17)
+
+- The Details tab shows a sample under each setting, drawn in the look in force and changing with the choice: the spinner words (cycling, or one word when calm), the marks (unicode or ASCII), a small table in the three styles, tool rows with or without dots, your prompt in cozy's bubble or the app's, and the window with no backdrop, the paper, or the glow. The terminal gets the two text samples and no pictures.
+
 ## 0.12.1 (2026-11-17)
 
 - The panel is three tabs, so it no longer shows everything at once: Look (skin, preset, mode, palette), Colours (your text, inline code, your looks and the fields) and Details (calm, icons, tables, tool rows, your bubble, backdrop), each small setting on one line. A note shows only when it has something to say about the choice in force. Pressing a tab changes no setting.
