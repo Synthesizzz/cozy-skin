@@ -2,6 +2,10 @@
 
 Newest first. Versions are the plugin's (`.claude-plugin/plugin.json`).
 
+## 0.12.3 (2026-11-17)
+
+- On the desktop, mode light or dark now says under the Mode buttons what it changes: the colours cozy draws (your bubble, tables, tool rows) and the terminal. The desktop window follows the app's own light or dark and ignores a scheme a plugin asks for, so light and dark looked the same there with no word why; change the app's appearance and pick auto to get cozy's paper. The terminal panel is unchanged.
+
 ## 0.12.2 (2026-11-17)
 
 - The Details tab shows a sample under each setting, drawn in the look in force and changing with the choice: the spinner words (cycling, or one word when calm), the marks (unicode or ASCII), a small table in the three styles, tool rows with or without dots, your prompt in cozy's bubble or the app's, and the window with no backdrop, the paper, or the glow. The terminal gets the two text samples and no pictures.

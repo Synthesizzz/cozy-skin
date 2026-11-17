@@ -11,7 +11,7 @@ import { readable } from './contrast'
 import { PRESETS, presetOf } from './presets'
 import { backdropSample, bubbleSample, calmLine, iconsLine, tablesSample, toolsSample } from './samples'
 import type { Sample } from './samples'
-import type { Palette } from './presets'
+import type { Mode, Palette } from './presets'
 import { LIVE_INIT } from './settings'
 import type { Side } from './settings'
 
@@ -132,6 +132,22 @@ type DrawPaneHook = MatchedHook<'ui.render', { component: 'Pane'; requestId: str
 
 // What a press runs: the same as typing `/cozy <args>`.
 export type Choose = (args: string) => Promise<unknown>
+
+// The line under the Mode buttons. The desktop window follows the app's own
+// light or dark and ignores a scheme a plugin asks for, so a fixed mode there
+// colours only what cozy draws and the terminal; the line says so, or light and
+// dark would look alike with no word why (Decisions 2026-11-17).
+export function modeNote(setting: Mode | 'auto', mode: Mode, surface: string): string | undefined {
+  if (setting === 'auto') {
+    return `Follows the app's own light or dark theme (now ${mode}).`
+  }
+  if (surface !== 'desktop') {
+    return undefined
+  }
+  const name = setting === 'light' ? 'Light' : 'Dark'
+
+  return `${name} colours what cozy draws: your bubble, tables and tool rows, and the terminal. The window keeps the app's own light or dark: change it in the app's settings, then pick auto to follow it with cozy's paper.`
+}
 
 export async function drawPane($: Parameters<DrawPaneHook>[0], e: Parameters<DrawPaneHook>[1], choose: Choose) {
   const els = $.ui.resolve(e)
@@ -351,7 +367,7 @@ export async function drawPane($: Parameters<DrawPaneHook>[0], e: Parameters<Dra
       {row(
         'Mode',
         (['light', 'dark', 'auto'] as const).map(m => pick(`mode-${m}`, m, settings.enabled && settings.mode === m, m)),
-        settings.mode === 'auto' ? `Follows the app's own light or dark theme (now ${mode}).` : undefined,
+        modeNote(settings.mode, mode, e.surface),
       )}
       {p === undefined || preset === undefined ? null : (
         <Box flexDirection="column" gap="xs">
