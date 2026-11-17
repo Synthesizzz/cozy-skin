@@ -15,9 +15,9 @@ export const SPARKLE_MS = 3000
 export type GlowPhase = 'idle' | 'working' | 'sparkle'
 export type GlowEvent = 'start' | 'answer' | 'aborted' | 'refusal' | 'error' | 'settle'
 
-// Only in mode auto, as the still paper: the app's own text follows Windows,
-// so a paper of the other mode could sit under text that cannot be read.
-export const wantsGlow = (settings: Settings): boolean => settings.enabled && settings.backdrop === 'glow' && settings.mode === 'auto'
+// In every mode, as the still paper: cozy's look paints the app's text in the
+// same preset and mode as the glow's paper.
+export const wantsGlow = (settings: Settings): boolean => settings.enabled && settings.backdrop === 'glow'
 
 // A turn's start is work, an answer is a sparkle, every other end is calm at
 // once; `settle` ends a sparkle and never interrupts work.

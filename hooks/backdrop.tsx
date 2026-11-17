@@ -1,8 +1,7 @@
 // The desktop window in the preset's paper: cozy's backdrop, set as the
 // session's theme and drawn behind the conversation with the app's own panels
-// frosted over it. Only in mode auto: the app's own text follows Windows, so
-// a paper picked by hand (light or dark) could sit under text of the other
-// mode and not be read.
+// frosted over it. In every mode: cozy's look paints the app's own text in the
+// same preset and mode as the paper (see fixed-look.ts), so the two match.
 //
 // One theme stands for the session, whichever plugin set it, and a clear
 // wipes it whoever set it. So cozy clears only on the person's own /cozy or
@@ -32,16 +31,15 @@ export const BACKDROP_ID = 'cozy-paper'
 const GLASS_OPACITY = 0.7
 
 export const wantsBackdrop = (settings: Settings): boolean =>
-  settings.enabled && settings.mode === 'auto' && settings.backdrop === 'paper'
+  settings.enabled && settings.backdrop === 'paper'
 
 // Mode light or dark: the whole app in the preset's palette of that mode, sent
 // as a look that names that mode alone, which the desktop paints whatever its
-// own appearance (it ignores `overrideColorScheme`). No paper or glow behind it
-// yet: those stay in mode auto.
+// own appearance (it ignores `overrideColorScheme`).
 export const wantsFixedLook = (settings: Settings): boolean => settings.enabled && settings.mode !== 'auto'
 
 // With the skin on, cozy always sets a look: the preset's palette (one mode in
-// light or dark, both in auto), and in auto the paper or glow when wanted.
+// light or dark, both in auto), with the paper or glow behind it when wanted.
 const wantsAny = (settings: Settings, mode: Mode): boolean => settings.enabled
 
 // The glow's phase, kept so the drawing follows the turn: the write redraws it.
@@ -97,12 +95,9 @@ export function paperOf(settings: Settings, mode: Mode): string {
 // Mode auto carries the preset's look in both modes and leaves the scheme to
 // the app (look.md: a look for both modes names no `overrideColorScheme`).
 export function backdropArgs(settings: Settings, mode: Mode): ThemeSetArgs {
-  if (wantsFixedLook(settings)) {
-    const look = fixedLook(settings.preset, mode) ?? fixedLook(PRESETS[0]?.name ?? 'kindle', mode)
-
-    return look === undefined ? {} : { colors: look.colors }
-  }
-  const look = autoLook(settings.preset) ?? autoLook(PRESETS[0]?.name ?? 'kindle')
+  const look = wantsFixedLook(settings)
+    ? (fixedLook(settings.preset, mode) ?? fixedLook(PRESETS[0]?.name ?? 'kindle', mode))
+    : (autoLook(settings.preset) ?? autoLook(PRESETS[0]?.name ?? 'kindle'))
   const colors = look === undefined ? {} : { colors: look.colors }
 
   if (wantsGlow(settings)) {

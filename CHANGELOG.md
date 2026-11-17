@@ -2,6 +2,10 @@
 
 Newest first. Versions are the plugin's (`.claude-plugin/plugin.json`).
 
+## 0.13.1 (2026-11-17)
+
+- The Backdrop (paper or glow) and the panel's paper now stand in mode light and dark too, not only in auto: cozy's look paints the app's text in the same preset and mode as the paper, so the reason they waited for auto is gone. Your bubble takes the surface tone over any backdrop, so it still shows.
+
 ## 0.13.0 (2026-11-17)
 
 - Mode light and mode dark now paint the whole desktop app in the preset's palette of that mode, whatever the app's own appearance: light is light and dark is dark, in the preset's paper, ink and accents (code, buttons and links follow its accent and its ok, error and warning colours). Each preset's look is checked against the contrast the desktop asks before it paints a theme; where a preset's own soft greys fall short, cozy steps its ink a little firmer until the desktop takes it. Mode auto works like the app's own default appearance: it follows the app's light or dark, and the whole app takes the preset's light palette when the app is light and its dark one when dark, with cozy's paper or glow behind it when the Backdrop is on. With the skin on, cozy now always sets the session's look, so another mod's theme no longer stands beside it; `/cozy off` clears cozy's. The paper and glow are not drawn behind a fixed mode yet.

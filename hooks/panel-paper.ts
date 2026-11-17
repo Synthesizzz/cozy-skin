@@ -1,6 +1,5 @@
-// The /cozy panel on the preset's paper. Only in mode auto: the panel's own
-// text is drawn in the app's colours, which follow Windows, so a paper picked
-// by hand (light or dark) could sit under text of the other mode and not be read.
+// The /cozy panel on the preset's paper, in every mode: cozy's look paints the
+// panel's text in the same preset and mode (see fixed-look.ts).
 
 import type { EngineInterface } from 'claude-code'
 import { PRESETS, presetOf } from './presets'
@@ -10,11 +9,11 @@ import type { Settings } from './settings'
 const PANE = 'cozy-skin'
 
 // What the panel asks to be painted under its body: the paper with the skin on
-// in mode auto, else nothing, and the app's own look stands.
+// on, else nothing, and the app's own look stands.
 export function panelPaper(settings: Settings, mode: Mode): { backgroundColor?: string } {
   const preset = presetOf(settings.preset) ?? PRESETS[0]
 
-  return settings.enabled && settings.mode === 'auto' && preset !== undefined ? { backgroundColor: preset[mode].palette.bg } : {}
+  return settings.enabled && preset !== undefined ? { backgroundColor: preset[mode].palette.bg } : {}
 }
 
 // The panel shown now is opened again so it takes the new paper: an open of

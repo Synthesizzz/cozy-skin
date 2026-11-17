@@ -8,7 +8,8 @@ import type { On, ThemeSetArgs } from 'claude-code'
 import { expect, test } from 'claude-code/testing'
 import { autoLook, fixedLook } from '../hooks/fixed-look'
 import { checkColors } from '../hooks/make-colors.js'
-import { PRESETS } from '../hooks/presets'
+import { panelPaper } from '../hooks/panel-paper'
+import { PRESETS, presetOf } from '../hooks/presets'
 import { modeNote } from '../hooks/pane'
 import { SETTINGS_KEY, sane } from '../hooks/settings'
 import { press } from './press'
@@ -53,12 +54,15 @@ for (const backdrop of ['paper', 'glow', 'off'] as const) {
   })
 }
 
-test("a fixed mode's look is the preset's palette of that mode, and auto goes back to the paper", async ($, on) => {
+test("a fixed mode's look is the preset's palette of that mode, and auto goes back to both", async ($, on) => {
   const w = world(on, { mode: 'auto', backdrop: 'paper', preset: 'solarized' })
 
   await $.session.start(START)
   await press($, 'light')
-  expect(w.last()).toEqual({ colors: fixedLook('solarized', 'light')!.colors })
+  const light = w.last()
+
+  expect(light !== 'clear' && light?.colors).toEqual(fixedLook('solarized', 'light')!.colors)
+  expect(light !== 'clear' && light?.backdrop).toBeTruthy()
 
   await press($, 'auto')
   const back = w.last()
@@ -111,6 +115,33 @@ for (const backdrop of ['paper', 'glow'] as const) {
     expect(set !== 'clear' && set?.backdrop).toBeTruthy()
   })
 }
+
+// Film saw the fixed look painted (2026-11-17), so the paper and glow that
+// waited for mode auto now stand behind light and dark too.
+for (const [mode, backdrop, scene] of [
+  ['dark', 'glow', 'cozy-glow'],
+  ['light', 'glow', 'cozy-glow'],
+  ['dark', 'paper', 'cozy-paper'],
+  ['light', 'paper', 'cozy-paper'],
+] as const) {
+  test(`mode ${mode} with the ${backdrop} draws it behind the ${mode} look`, async ($, on) => {
+    const w = world(on, { mode, preset: 'nord', backdrop })
+
+    await $.session.start(START)
+    const set = w.last()
+
+    expect(modesOf(set)).toEqual([mode])
+    expect(set !== 'clear' && (set?.backdrop as { scene?: string } | undefined)?.scene).toBe(scene)
+    const glass = set !== 'clear' ? (set?.backdrop as { glass?: { tint?: string } } | undefined)?.glass : undefined
+
+    expect(glass?.tint).toBe(presetOf('nord')![mode].palette.bg)
+  })
+}
+
+test('a fixed mode panel sits on the paper of that mode', () => {
+  expect(panelPaper(sane({ mode: 'dark', preset: 'nord' }), 'dark')).toEqual({ backgroundColor: presetOf('nord')!.dark.palette.bg })
+  expect(panelPaper(sane({ mode: 'light', preset: 'nord', enabled: false }), 'light')).toEqual({})
+})
 
 test('the auto look for every preset is one the desktop will paint', () => {
   const bad: string[] = []

@@ -48,10 +48,10 @@ export async function drawPrompt($: Parameters<DrawPromptHook>[0], e: Parameters
 
   const { Box, Button, Text } = $.ui.resolve(e)
   const p = look.palette
-  // The backdrop (mode auto) paints the window in the preset's paper: a bubble
-  // on that same paper would vanish, so it takes the surface tone instead and
-  // its ink is kept readable on it.
-  const isOnBackdrop = settings.backdrop !== 'off' && settings.mode === 'auto'
+  // The backdrop paints the window in the preset's paper: a bubble on that same
+  // paper would vanish, so it takes the surface tone instead and its ink is
+  // kept readable on it.
+  const isOnBackdrop = settings.backdrop !== 'off'
   const fill = isOnBackdrop ? p.surface : p.bg
   const wanted = picked === null ? p.fg : resolveColor(picked, live.mode)
   const color = isOnBackdrop ? readable(wanted, fill) : wanted

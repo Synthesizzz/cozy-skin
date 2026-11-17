@@ -80,11 +80,12 @@ test('the glow is a backdrop setting, and a 0.11.0 themes field is read as one',
   expect(describe(sane({ backdrop: 'glow', mode: 'auto' }), 'light')).toContain('Backdrop: glow')
 })
 
-test('the glow stands for backdrop glow, the skin on and mode auto, in either mode', () => {
+test('the glow stands for backdrop glow with the skin on, in every mode', () => {
   const on = sane({ mode: 'auto', backdrop: 'glow' })
 
   expect(wantsGlow(on)).toBe(true)
-  expect(wantsGlow(sane({ mode: 'light', backdrop: 'glow' }))).toBe(false)
+  expect(wantsGlow(sane({ mode: 'light', backdrop: 'glow' }))).toBe(true)
+  expect(wantsGlow(sane({ mode: 'dark', backdrop: 'glow' }))).toBe(true)
   expect(wantsGlow(sane({ mode: 'auto', backdrop: 'glow', enabled: false }))).toBe(false)
   expect(wantsGlow(sane({ mode: 'auto', backdrop: 'paper' }))).toBe(false)
   // The still paper is a separate choice and is not read as the glow.
@@ -151,12 +152,13 @@ test('a session that starts with the glow in mode auto sets the glow scene', asy
   expect(w.last()).toEqual(backdropArgs(sane({ mode: 'auto', backdrop: 'glow' }), 'light'))
 })
 
-test('a session that starts with the glow in a fixed mode sets the look with no glow', async ($, on) => {
+test('a session that starts with the glow in mode dark sets the dark look with the glow behind it', async ($, on) => {
   const w = world(on, { mode: 'dark', backdrop: 'glow' })
 
   await $.session.start(START)
   expect(w.calls).toHaveLength(1)
-  expect(w.last()).toEqual({ colors: fixedLook('kindle', 'dark')!.colors })
+  expect(w.last()).toEqual({ ...backdropArgs(sane({ mode: 'dark', backdrop: 'glow' }), 'dark'), colors: fixedLook('kindle', 'dark')!.colors })
+  expect((w.last() as ThemeSetArgs).backdrop).toMatchObject({ scene: GLOW_SCENE })
 })
 
 test('/cozy themes glow sets it, and off leaves the look without it', async ($, on) => {

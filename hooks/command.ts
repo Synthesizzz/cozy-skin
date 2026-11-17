@@ -160,8 +160,8 @@ export function applyTheme(settings: Settings, action: ThemeAction): Settings {
   }
 }
 
-// The backdrop as /cozy tells it: off, waiting for the skin or mode auto, or
-// what the app last answered.
+// The backdrop as /cozy tells it: off, waiting for the skin, or what the app
+// last answered.
 export function backdropLine(settings: Settings, note: BackdropNote): string {
   if (settings.backdrop === 'off') {
     return 'Backdrop: off'
@@ -170,9 +170,6 @@ export function backdropLine(settings: Settings, note: BackdropNote): string {
 
   if (!settings.enabled) {
     return `Backdrop: ${kind} (not drawn while cozy-skin is off)`
-  }
-  if (settings.mode !== 'auto') {
-    return `Backdrop: ${kind} (waiting for mode auto: the app's own text follows Windows, so the paper does too)`
   }
   if (note.isDrawn) {
     return `Backdrop: ${kind} (drawn behind the window)`

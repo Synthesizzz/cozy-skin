@@ -43,13 +43,13 @@ test("in mode auto the panel asks for the preset's paper, a raw colour for every
   }
 })
 
-test("in a fixed mode, or with the skin off, the panel keeps the app's own look", () => {
-  expect(panelPaper(sane({ mode: 'light' }), 'light')).toEqual({})
-  expect(panelPaper(sane({ mode: 'dark' }), 'dark')).toEqual({})
+test("in a fixed mode the panel sits on that mode's paper, and with the skin off on the app's own look", () => {
+  expect(panelPaper(sane({ mode: 'light' }), 'light')).toEqual({ backgroundColor: kindle.light.palette.bg })
+  expect(panelPaper(sane({ mode: 'dark' }), 'dark')).toEqual({ backgroundColor: kindle.dark.palette.bg })
   expect(panelPaper(sane({ mode: 'auto', enabled: false }), 'dark')).toEqual({})
 })
 
-test("/cozy panel in mode auto opens on the preset's paper, in a fixed mode on the app's own", async ($, on) => {
+test("/cozy panel opens on the preset's paper, and a fixed mode moves it to that mode's paper", async ($, on) => {
   const w = world(on, { mode: 'auto' })
 
   await $.session.start(START)
@@ -57,7 +57,7 @@ test("/cozy panel in mode auto opens on the preset's paper, in a fixed mode on t
   expect(w.opened[0]).toEqual({ id: 'cozy-skin', backgroundColor: kindle.dark.palette.bg, focus: true })
 
   await press($, 'light')
-  expect(w.last()).toEqual({ id: 'cozy-skin', backgroundColor: undefined, focus: undefined })
+  expect(w.last()).toEqual({ id: 'cozy-skin', backgroundColor: kindle.light.palette.bg, focus: undefined })
 })
 
 test('a new preset repaints the shown panel in its paper without taking the keyboard', async ($, on) => {

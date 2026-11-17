@@ -15,8 +15,8 @@ export type Settings = {
   // selection and the right-click menu that a mod-drawn row cannot have.
   bubble: 'cozy' | 'app'
   // The desktop window behind the conversation: the preset's paper, with the
-  // app's panels frosted over it, or the app's own. Drawn in mode auto only
-  // (see wantsBackdrop in backdrop.tsx).
+  // app's panels frosted over it, or the app's own. Drawn in every mode with
+  // the skin on (see wantsBackdrop in backdrop.tsx).
   backdrop: 'off' | 'paper' | 'glow'
   enabled: boolean
   // Claude Code's own theme before cozy-skin first changed it; null until the

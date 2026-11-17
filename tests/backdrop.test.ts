@@ -59,14 +59,14 @@ test('/cozy backdrop takes off or paper, and an old or broken setting is off', (
   expect(sane({ backdrop: 'grain' }).backdrop).toBe('off')
 })
 
-test('the backdrop stands only for paper, the skin on and mode auto', () => {
+test('the backdrop stands for paper with the skin on, in every mode', () => {
   const on = sane({ mode: 'auto', backdrop: 'paper' })
 
   expect(wantsBackdrop(on)).toBe(true)
   expect(wantsBackdrop({ ...on, backdrop: 'off' })).toBe(false)
   expect(wantsBackdrop({ ...on, enabled: false })).toBe(false)
-  expect(wantsBackdrop({ ...on, mode: 'light' })).toBe(false)
-  expect(wantsBackdrop({ ...on, mode: 'dark' })).toBe(false)
+  expect(wantsBackdrop({ ...on, mode: 'light' })).toBe(true)
+  expect(wantsBackdrop({ ...on, mode: 'dark' })).toBe(true)
 })
 
 test("the app's panels frost in the preset's own paper, a raw colour, over the preset's look in both modes", () => {
@@ -148,16 +148,15 @@ test("/cozy says why the app does not draw the backdrop, in the app's words", as
   expect(shown.text).toContain('Paper (not drawn: no desktop surface is attached)')
 })
 
-test('/cozy backdrop paper in a fixed mode keeps the setting and waits for mode auto', async ($, on) => {
+test('/cozy backdrop paper in a fixed mode draws it behind that mode', async ($, on) => {
   const w = world(on, { mode: 'light' })
 
   await $.session.start(START)
   const said = { text: await press($, 'backdrop paper') }
 
   expect(sane(w.kept.get(SETTINGS_KEY)).backdrop).toBe('paper')
-  // Only the fixed mode's look stands, never the paper behind it.
-  expect(w.sets().every(call => call.backdrop === undefined && call.colors !== undefined)).toBe(true)
-  expect(said.text).toContain('Paper (waiting for mode auto')
+  expect(tintOf(w.last())).toBe(kindle.light.palette.bg)
+  expect(said.text).toContain('Paper (drawn behind the window)')
 
   await press($, 'auto')
   expect(tintOf(w.last())).toBeDefined()
