@@ -133,20 +133,13 @@ type DrawPaneHook = MatchedHook<'ui.render', { component: 'Pane'; requestId: str
 // What a press runs: the same as typing `/cozy <args>`.
 export type Choose = (args: string) => Promise<unknown>
 
-// The line under the Mode buttons. The desktop window follows the app's own
-// light or dark and ignores a scheme a plugin asks for, so a fixed mode there
-// colours only what cozy draws and the terminal; the line says so, or light and
-// dark would look alike with no word why (Decisions 2026-11-17).
+// The line under the Mode buttons: on the desktop a fixed mode paints the
+// whole app in the preset's palette of that mode (see fixed-look.ts).
 export function modeNote(setting: Mode | 'auto', mode: Mode, surface: string): string | undefined {
   if (setting === 'auto') {
     return `Follows the app's own light or dark theme (now ${mode}).`
   }
-  if (surface !== 'desktop') {
-    return undefined
-  }
-  const name = setting === 'light' ? 'Light' : 'Dark'
-
-  return `${name} colours what cozy draws: your bubble, tables and tool rows, and the terminal. The window keeps the app's own light or dark: change it in the app's settings, then pick auto to follow it with cozy's paper.`
+  return surface === 'desktop' ? `The whole app in the preset's ${setting} palette.` : undefined
 }
 
 export async function drawPane($: Parameters<DrawPaneHook>[0], e: Parameters<DrawPaneHook>[1], choose: Choose) {

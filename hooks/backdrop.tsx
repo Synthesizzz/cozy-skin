@@ -11,6 +11,7 @@
 
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Hook, MatchedHook, ThemeSetArgs, Timer } from 'claude-code'
+import { fixedLook } from './fixed-look'
 import { GLOW_SCENE, SPARKLE_MS, glowSvg, nextPhase, wantsGlow } from './glow'
 import type { GlowEvent, GlowPhase } from './glow'
 import { PRESETS, presetOf } from './presets'
@@ -33,8 +34,14 @@ const GLASS_OPACITY = 0.7
 export const wantsBackdrop = (settings: Settings): boolean =>
   settings.enabled && settings.mode === 'auto' && settings.backdrop === 'paper'
 
+// Mode light or dark: the whole app in the preset's palette of that mode, sent
+// as a look that names that mode alone, which the desktop paints whatever its
+// own appearance (it ignores `overrideColorScheme`). No paper or glow behind it
+// yet: those stay in mode auto until the desktop is seen painting the look.
+export const wantsFixedLook = (settings: Settings): boolean => settings.enabled && settings.mode !== 'auto'
+
 // The glow, while it stands, takes the place of the still paper.
-const wantsAny = (settings: Settings, mode: Mode): boolean => wantsBackdrop(settings) || wantsGlow(settings)
+const wantsAny = (settings: Settings, mode: Mode): boolean => wantsBackdrop(settings) || wantsGlow(settings) || wantsFixedLook(settings)
 
 // The glow's phase, kept so the drawing follows the turn: the write redraws it.
 const glowAtom = atom({ plugin: 'cozy-skin', key: 'glow' } as const, { phase: 'idle' as GlowPhase })
@@ -87,6 +94,11 @@ export function paperOf(settings: Settings, mode: Mode): string {
 // The panels frost in the paper itself, so the app's sidebar and prompt sit on
 // the same tone a little denser; the scheme says which mode the paper is.
 export function backdropArgs(settings: Settings, mode: Mode): ThemeSetArgs {
+  if (wantsFixedLook(settings)) {
+    const look = fixedLook(settings.preset, mode) ?? fixedLook(PRESETS[0]?.name ?? 'kindle', mode)
+
+    return look === undefined ? {} : { colors: look.colors }
+  }
   if (wantsGlow(settings)) {
     return { backdrop: { scene: GLOW_SCENE, glass: { tint: paperOf(settings, mode), opacity: GLASS_OPACITY } }, overrideColorScheme: mode }
   }

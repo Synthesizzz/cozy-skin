@@ -2,6 +2,10 @@
 
 Newest first. Versions are the plugin's (`.claude-plugin/plugin.json`).
 
+## 0.13.0 (2026-11-17)
+
+- Mode light and mode dark now paint the whole desktop app in the preset's palette of that mode, whatever the app's own appearance: light is light and dark is dark, in the preset's paper, ink and accents (code, buttons and links follow its accent and its ok, error and warning colours). Each preset's look is checked against the contrast the desktop asks before it paints a theme; where a preset's own soft greys fall short, cozy steps its ink a little firmer until the desktop takes it. Mode auto is unchanged: the app's own light or dark, with cozy's paper or glow when the Backdrop is on. The paper and glow are not drawn behind a fixed mode yet.
+
 ## 0.12.3 (2026-11-17)
 
 - On the desktop, mode light or dark now says under the Mode buttons what it changes: the colours cozy draws (your bubble, tables, tool rows) and the terminal. The desktop window follows the app's own light or dark and ignores a scheme a plugin asks for, so light and dark looked the same there with no word why; change the app's appearance and pick auto to get cozy's paper. The terminal panel is unchanged.

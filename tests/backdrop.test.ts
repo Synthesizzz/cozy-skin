@@ -91,10 +91,10 @@ test('a session that starts with paper in mode auto sets the backdrop', async ($
   expect(w.last()).toEqual(backdropArgs(sane({ mode: 'auto', backdrop: 'paper' }), 'dark'))
 })
 
-// With no paper wanted, a start makes no theme call, so another plugin's theme stands.
+// With no paper wanted, a start makes no theme call, so another plugin's theme
+// stands. (A fixed mode sets the preset's look: tests/fixed-mode.test.ts.)
 for (const [why, stored] of [
   ['the backdrop off', { mode: 'auto' }],
-  ['a fixed mode', { mode: 'light', backdrop: 'paper' }],
   ['the skin off', { mode: 'auto', backdrop: 'paper', enabled: false }],
 ] as const) {
   test(`a session that starts with ${why} makes no theme call`, async ($, on) => {
@@ -130,7 +130,8 @@ test("a /cozy change with no paper wanted never clears a theme cozy did not set"
   const w = world(on, { mode: 'auto' })
 
   await $.session.start(START)
-  for (const args of ['calm on', 'nord', 'light', 'off', 'backdrop off']) {
+  // No fixed mode here: light or dark sets cozy's own look, which off may clear.
+  for (const args of ['calm on', 'nord', 'off', 'backdrop off']) {
     await press($, args)
   }
   expect(w.calls).toEqual([])
@@ -153,11 +154,12 @@ test('/cozy backdrop paper in a fixed mode keeps the setting and waits for mode 
   const said = { text: await press($, 'backdrop paper') }
 
   expect(sane(w.kept.get(SETTINGS_KEY)).backdrop).toBe('paper')
-  expect(w.calls).toEqual([])
+  // Only the fixed mode's look stands, never the paper behind it.
+  expect(w.sets().every(call => call.backdrop === undefined && call.colors !== undefined)).toBe(true)
   expect(said.text).toContain('Paper (waiting for mode auto')
 
   await press($, 'auto')
-  expect(w.sets()).toHaveLength(1)
+  expect(tintOf(w.last())).toBeDefined()
   await press($, 'off')
   expect(w.last()).toBe('clear')
 })

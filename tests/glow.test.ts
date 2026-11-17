@@ -2,6 +2,7 @@ import type { On, ThemeResult, ThemeSetArgs } from 'claude-code'
 import { expect, test } from 'claude-code/testing'
 import { backdropArgs, wantsBackdrop } from '../hooks/backdrop'
 import { applyTheme, describe, parseTheme } from '../hooks/command'
+import { fixedLook } from '../hooks/fixed-look'
 import { GLOW_SCENE, SPARKLE_MS, glowSvg, nextPhase, wantsGlow } from '../hooks/glow'
 import type { GlowPhase } from '../hooks/glow'
 import { presetOf } from '../hooks/presets'
@@ -150,11 +151,12 @@ test('a session that starts with the glow in mode auto sets the glow scene', asy
   expect(w.last()).toEqual(backdropArgs(sane({ mode: 'auto', backdrop: 'glow' }), 'light'))
 })
 
-test('a session that starts with the glow in a fixed mode makes no theme call', async ($, on) => {
+test('a session that starts with the glow in a fixed mode sets the look with no glow', async ($, on) => {
   const w = world(on, { mode: 'dark', backdrop: 'glow' })
 
   await $.session.start(START)
-  expect(w.calls).toEqual([])
+  expect(w.calls).toHaveLength(1)
+  expect(w.last()).toEqual({ colors: fixedLook('kindle', 'dark')!.colors })
 })
 
 test('/cozy themes glow sets it, and off clears it', async ($, on) => {
