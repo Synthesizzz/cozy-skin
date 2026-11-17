@@ -2,6 +2,10 @@
 
 Newest first. Versions are the plugin's (`.claude-plugin/plugin.json`).
 
+## 0.12.1 (2026-11-17)
+
+- The panel is three tabs, so it no longer shows everything at once: Look (skin, preset, mode, palette), Colours (your text, inline code, your looks and the fields) and Details (calm, icons, tables, tool rows, your bubble, backdrop), each small setting on one line. A note shows only when it has something to say about the choice in force. Pressing a tab changes no setting.
+
 ## 0.12.0 (2026-11-17)
 
 - Every setting is a button in the `/cozy` panel, and typed `/cozy` is two things: `/cozy` opens the panel and `/cozy off` turns the skin off (the way out when the panel will not open). Any other `/cozy` word, such as `/cozy nord`, answers "Use /cozy to open the panel" and changes nothing. Your stored settings and saved looks are untouched.

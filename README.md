@@ -31,7 +31,7 @@ Before uninstalling, run `/cozy off` to get your Claude Code theme back.
 | `/cozy` | Open the panel: every choice is a button there |
 | `/cozy off` | Turn the skin off and restore your Claude Code theme (the way out if the panel will not open) |
 
-In the panel: skin on or off, preset, mode (`auto` follows Windows), your text and inline-code colours (a name, or any `#rrggbb` typed in), calm spinner words, glyphs or plain ASCII, table style, tool-row dots, your bubble (cozy's or the app's own), the desktop backdrop (the preset's paper behind the whole window in mode `auto`, needs Claude Code 2.1.323 or newer; `glow` adds soft glows in the preset's accent that drift at the sides, move faster while Claude works and sparkle when a turn is done), and your saved looks (a name, up to 12, with ✕ to drop one).
+In the panel (three tabs: Look, Colours, Details): skin on or off, preset, mode (`auto` follows Windows), your text and inline-code colours (a name, or any `#rrggbb` typed in), calm spinner words, glyphs or plain ASCII, table style, tool-row dots, your bubble (cozy's or the app's own), the desktop backdrop (the preset's paper behind the whole window in mode `auto`, needs Claude Code 2.1.323 or newer; `glow` adds soft glows in the preset's accent that drift at the sides, move faster while Claude works and sparkle when a turn is done), and your saved looks (a name, up to 12, with ✕ to drop one).
 
 Colour names: `ink`, `rust`, `plum`, `teal`, `slate`, `olive`, `brick`, `ochre`.
 

@@ -1,6 +1,6 @@
 {
   "name": "cozy-skin",
-  "version": "0.12.0",
+  "version": "0.12.1",
   "description": "Cozy colour presets (e-reader and VS Code looks), your text colour, table copy and export buttons, and spinner words for Claude Code. /cozy opens the panel that picks them.",
   "author": {
     "name": "Synthesizzz"

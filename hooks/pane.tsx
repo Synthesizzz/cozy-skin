@@ -19,7 +19,7 @@ const settingsAtom = atom({ plugin: 'cozy-skin', key: 'live' } as const, LIVE_IN
 
 // What is typed in the panel's two fields and the last thing it had to say
 // about it (a refused name or colour). Kept in an atom: a pane has no state of its own.
-const draftAtom = atom({ plugin: 'cozy-skin', key: 'draft' } as const, { look: '', you: '', code: '', note: '' })
+const draftAtom = atom({ plugin: 'cozy-skin', key: 'draft' } as const, { look: '', you: '', code: '', note: '', tab: 'look' as 'look' | 'colours' | 'details' })
 
 export const PANE = 'cozy-skin'
 
@@ -299,15 +299,28 @@ export async function drawPane($: Parameters<DrawPaneHook>[0], e: Parameters<Dra
     )
   }
 
-  // Sections spaced well apart, with a margin round the whole panel.
-  return (
-    <Box flexDirection="column" gap="lg" padding="sm">
-      {draft.note === '' ? null : <Text dimColor>{draft.note}</Text>}
-      {group(
-        'Skin',
-        [pick('skin-on', 'on', settings.enabled, 'on'), pick('skin-off', 'off', !settings.enabled, 'off')],
-        settings.enabled ? undefined : 'Off: cozy-skin draws nothing until it is on again.',
-      )}
+  // One line per small setting: its name, then its buttons. A note shows only
+  // when it has something to say about the choice in force.
+  const row = (label: string, picks: RenderChildren, note?: string) => (
+    <Box key={`row-${label}`} flexDirection="column">
+      <Box columnGap="md" rowGap="xs" alignItems="center" flexWrap="wrap">
+        <Text weight="semibold">{label}</Text>
+        <Box columnGap="sm" rowGap="xs" flexWrap="wrap">
+          {picks}
+        </Box>
+      </Box>
+      {note === undefined ? null : <Text dimColor>{note}</Text>}
+    </Box>
+  )
+  const tab = (key: 'look' | 'colours' | 'details', label: string) => (
+    <Button key={`tab-${key}`} label={label} variant={draft.tab === key ? 'primary' : 'secondary'} onPress={() => void setDraft({ tab: key })}>
+      <Text>{label}</Text>
+    </Button>
+  )
+
+  const lookTab = (
+    <Box flexDirection="column" gap="lg">
+      {row('Skin', [pick('skin-on', 'on', settings.enabled, 'on'), pick('skin-off', 'off', !settings.enabled, 'off')], settings.enabled ? undefined : 'Off: cozy-skin draws nothing until it is on again.')}
       <Box flexDirection="column" gap="sm">
         <Box flexDirection="column">
           <Text weight="semibold">Preset</Text>
@@ -322,10 +335,10 @@ export async function drawPane($: Parameters<DrawPaneHook>[0], e: Parameters<Dra
         )}
         {shelf('Accessibility · every text colour at 7:1 (WCAG AAA)', ACCESS)}
       </Box>
-      {group(
+      {row(
         'Mode',
         (['light', 'dark', 'auto'] as const).map(m => pick(`mode-${m}`, m, settings.enabled && settings.mode === m, m)),
-        `Match it to the app's own light or dark theme (now ${mode}).`,
+        settings.mode === 'auto' ? `Follows the app's own light or dark theme (now ${mode}).` : undefined,
       )}
       {p === undefined || preset === undefined ? null : (
         <Box flexDirection="column" gap="xs">
@@ -346,63 +359,13 @@ export async function drawPane($: Parameters<DrawPaneHook>[0], e: Parameters<Dra
           </Box>
         </Box>
       )}
-      {colours('you', 'Your text', "Your messages, in a bubble on the preset paper: the preset's ink, or a colour of your own.")}
-      {colours('code', 'Inline code', "Code inside Claude's sentences, like `this`: the preset's accent, or a colour of your own. Only those lines are redrawn; the rest of a reply stays Claude Code's.")}
-      {group(
-        'Calm',
-        [pick('calm-on', 'on', settings.calm, 'calm on'), pick('calm-off', 'off', !settings.calm, 'calm off')],
-        "The spinner's words and the turn footer in the preset's quiet voice.",
-      )}
-      {group(
-        'Icons',
-        [
-          pick('icons-unicode', 'unicode', settings.icons === 'unicode', 'icons unicode'),
-          pick('icons-ascii', 'ascii', settings.icons === 'ascii', 'icons ascii'),
-        ],
-        'The dots and marks the skin draws: unicode shapes, or plain ASCII for a font that lacks them.',
-      )}
-      {group(
-        'Tables',
-        [
-          pick('tables-on', 'grid', settings.tables === 'box', 'tables box'),
-          pick('tables-text', 'text', settings.tables === 'text', 'tables text'),
-          pick('tables-off', 'off', settings.tables === 'off', 'tables off'),
-        ],
-        settings.tables === 'off'
-          ? "Off: Claude Code draws tables its own way, with no Copy, CSV or XLSX."
-          : "A framed grid in the preset's colours that always fits the reply: long cells wrap, figures sit right, and Copy, CSV and XLSX ask where to save.",
-      )}
-      {group(
-        'Tool rows',
-        [
-          pick('tools-on', 'on', settings.tools === 'on', 'tools on'),
-          pick('tools-off', 'off', settings.tools === 'off', 'tools off'),
-        ],
-        "A dot in the preset's colour beside each tool call: reading, writing, running, searching, the web, MCP; red when a call failed. Folded groups (Ran 2 commands) get dots in the terminal only.",
-      )}
-      {group(
-        'Your bubble',
-        [
-          pick('bubble-cozy', 'cozy', settings.bubble === 'cozy', 'bubble cozy'),
-          pick('bubble-app', 'app', settings.bubble === 'app', 'bubble app'),
-        ],
-        settings.bubble === 'app'
-          ? "Claude Code's own bubble on the desktop: Rewind, Fork, selecting its text and the right-click menu, in the app's colours."
-          : "Your prompt on the preset's paper, with its time, Copy and Edit on hover. No Rewind, Fork or text selection: the app keeps those to its own bubble.",
-      )}
-      {e.surface !== 'desktop'
-        ? null
-        : group(
-            'Backdrop',
-            [
-              pick('backdrop-off', 'off', settings.backdrop === 'off', 'backdrop off'),
-              pick('backdrop-paper', 'paper', settings.backdrop === 'paper', 'backdrop paper'),
-              pick('backdrop-glow', 'glow', settings.backdrop === 'glow', 'backdrop glow'),
-            ],
-            settings.backdrop === 'off'
-              ? "The whole window on the preset's paper, the app's sidebar and prompt frosted over it. Glow adds soft glows in the preset's accent that drift at the sides, move faster while Claude works and sparkle when a turn is done. Drawn in mode auto only, where the app's own text follows Windows as the paper does."
-              : backdropLine(settings, drawn ?? { isDrawn: false, reason: null, isSet: false }).replace(/^Backdrop: (paper|glow) /, (_, kind: string) => `${kind[0]?.toUpperCase()}${kind.slice(1)} `),
-          )}
+    </Box>
+  )
+
+  const coloursTab = (
+    <Box flexDirection="column" gap="lg">
+      {colours('you', 'Your text', "Your messages, on the preset's paper: its ink, or a colour of your own.")}
+      {colours('code', 'Inline code', "Code inside Claude's sentences, like `this`: the preset's accent, or a colour of your own.")}
       {group(
         'Your looks',
         Object.entries(settings.looks).map(([name, look]) =>
@@ -419,13 +382,10 @@ export async function drawPane($: Parameters<DrawPaneHook>[0], e: Parameters<Dra
           ),
         ),
         Object.keys(settings.looks).length === 0
-          ? 'Save the preset, mode and colours you have now under a name; they come back here as one button.'
-          : 'A preset, a mode and your colours, as saved. Save adds the current one; ✕ drops one.',
+          ? 'Save the preset, mode and colours you have now under a name.'
+          : 'A preset, a mode and your colours, as saved. ✕ drops one.',
       )}
-      {Object.keys(settings.looks).length === 0 ? null : group(
-        'Forget a look',
-        Object.keys(settings.looks).map(name => pick(`forget-${name}`, `✕ ${name}`, false, `forget ${name}`)),
-      )}
+      {Object.keys(settings.looks).length === 0 ? null : row('Forget', Object.keys(settings.looks).map(name => pick(`forget-${name}`, `✕ ${name}`, false, `forget ${name}`)))}
       {Input === undefined ? null : (
         <Box flexDirection="column" gap="sm">
           <Input key="look-name" label="Save as" placeholder="a name: night-work" value={draft.look} onInput={(v: string) => void setDraft({ look: v })} onSubmit={(v: string) => void submit('look', v)} />
@@ -433,6 +393,61 @@ export async function drawPane($: Parameters<DrawPaneHook>[0], e: Parameters<Dra
           <Input key="color-code" label="Inline code" placeholder="any colour: #rrggbb" value={draft.code} onInput={(v: string) => void setDraft({ code: v })} onSubmit={(v: string) => void submit('code', v)} />
         </Box>
       )}
+    </Box>
+  )
+
+  const detailsTab = (
+    <Box flexDirection="column" gap="md">
+      {row('Calm', [pick('calm-on', 'on', settings.calm, 'calm on'), pick('calm-off', 'off', !settings.calm, 'calm off')], settings.calm ? 'One spinner word per turn.' : undefined)}
+      {row('Icons', [
+        pick('icons-unicode', 'unicode', settings.icons === 'unicode', 'icons unicode'),
+        pick('icons-ascii', 'ascii', settings.icons === 'ascii', 'icons ascii'),
+      ])}
+      {row(
+        'Tables',
+        [
+          pick('tables-on', 'grid', settings.tables === 'box', 'tables box'),
+          pick('tables-text', 'text', settings.tables === 'text', 'tables text'),
+          pick('tables-off', 'off', settings.tables === 'off', 'tables off'),
+        ],
+        settings.tables === 'off' ? "Claude Code draws tables its own way, with no Copy, CSV or XLSX." : undefined,
+      )}
+      {row('Tool rows', [pick('tools-on', 'on', settings.tools === 'on', 'tools on'), pick('tools-off', 'off', settings.tools === 'off', 'tools off')])}
+      {row(
+        'Your bubble',
+        [
+          pick('bubble-cozy', 'cozy', settings.bubble === 'cozy', 'bubble cozy'),
+          pick('bubble-app', 'app', settings.bubble === 'app', 'bubble app'),
+        ],
+        settings.bubble === 'app'
+          ? "Claude Code's own bubble: Rewind, Fork, text selection."
+          : 'Cozy has no Rewind, Fork or text selection: pick app for those.',
+      )}
+      {e.surface !== 'desktop'
+        ? null
+        : row(
+            'Backdrop',
+            [
+              pick('backdrop-off', 'off', settings.backdrop === 'off', 'backdrop off'),
+              pick('backdrop-paper', 'paper', settings.backdrop === 'paper', 'backdrop paper'),
+              pick('backdrop-glow', 'glow', settings.backdrop === 'glow', 'backdrop glow'),
+            ],
+            settings.backdrop === 'off'
+              ? "The window on the preset's paper (glow: soft glows that drift and brighten while Claude works). Mode auto only."
+              : backdropLine(settings, drawn ?? { isDrawn: false, reason: null, isSet: false }).replace(/^Backdrop: (paper|glow) /, (_, kind: string) => `${kind[0]?.toUpperCase()}${kind.slice(1)} `),
+          )}
+    </Box>
+  )
+
+  return (
+    <Box flexDirection="column" gap="lg" padding="sm">
+      {draft.note === '' ? null : <Text dimColor>{draft.note}</Text>}
+      <Box columnGap="sm" rowGap="sm" flexWrap="wrap">
+        {tab('look', 'Look')}
+        {tab('colours', 'Colours')}
+        {tab('details', 'Details')}
+      </Box>
+      {draft.tab === 'colours' ? coloursTab : draft.tab === 'details' ? detailsTab : lookTab}
     </Box>
   )
 }

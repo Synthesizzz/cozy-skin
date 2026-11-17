@@ -214,6 +214,7 @@ test('the desktop panel has backdrop buttons, and the terminal panel has none', 
   await $.session.start(START)
   const ui = await $.ui.mount(PANE)
 
+  await ui.press({ key: 'tab-details' })
   expect((await ui.find({ type: 'Button', key: 'backdrop-off' }))?.props.variant).toBe('primary')
   await ui.press({ key: 'backdrop-paper' })
   expect(sane(w.kept.get(SETTINGS_KEY)).backdrop).toBe('paper')

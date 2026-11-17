@@ -57,6 +57,11 @@ export async function press($: Engine, args: string, surface: 'desktop' | 'termi
   const ui = await $.ui.mount({ ...PANE, surface } as never)
 
   for (const step of stepsOf(args)) {
+    // The panel is tabs: go to the one that holds the button or field.
+    const key = 'press' in step ? step.press : step.input
+    const tab = /^(skin|preset|mode)-/.test(key) ? 'look' : /^(you|code|look|forget|color)-/.test(key) ? 'colours' : 'details'
+
+    await ui.press({ key: `tab-${tab}` })
     if ('press' in step) {
       await ui.press({ key: step.press })
     } else {

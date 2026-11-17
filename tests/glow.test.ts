@@ -210,6 +210,7 @@ test('the desktop panel has a glow button beside the paper, and the terminal pan
   await $.session.start(START)
   const ui = await $.ui.mount(PANE)
 
+  await ui.press({ key: 'tab-details' })
   expect((await ui.find({ type: 'Button', key: 'backdrop-off' }))?.props.variant).toBe('primary')
   await ui.press({ key: 'backdrop-glow' })
   expect(sane(w.kept.get(SETTINGS_KEY)).backdrop).toBe('glow')

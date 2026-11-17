@@ -103,6 +103,7 @@ test('a colour button sets that side and becomes the one in force', async ($, on
   await $.session.start(START)
   const ui = await $.ui.mount(PANE)
 
+  await ui.press({ key: 'tab-colours' })
   expect((await ui.find({ type: 'Button', key: 'you-default' }))?.props.variant).toBe('primary')
 
   await ui.press({ key: 'you-plum' })
@@ -200,6 +201,7 @@ test('the panel turns cozy tables off and on', async ($, on) => {
   await $.session.start(START)
   const ui = await $.ui.mount(PANE)
 
+  await ui.press({ key: 'tab-details' })
   expect((await ui.find({ type: 'Button', key: 'tables-on' }))?.props.variant).toBe('primary')
   await ui.press({ key: 'tables-off' })
   expect(sane(w.kept.get(SETTINGS_KEY)).tables).toBe('off')
@@ -208,18 +210,22 @@ test('the panel turns cozy tables off and on', async ($, on) => {
   expect(sane(w.kept.get(SETTINGS_KEY)).tables).toBe('box')
 })
 
-test('the panel runs skin, preset, mode and palette before the colour picks', async ($, on) => {
+test('each tab runs its settings in order: the look, then colours and looks, then the details', async ($, on) => {
   world(on)
 
   await $.session.start(START)
   const ui = await $.ui.mount(PANE)
   // Group headings are the semibold lines.
-  const headings = (await ui.findAll({ type: 'Text' })).filter(t => t.props.weight === 'semibold').map(t => t.text)
+  const headings = async () => (await ui.findAll({ type: 'Text' })).filter(t => t.props.weight === 'semibold').map(t => t.text.split(' ')[0])
 
-  expect(headings.map(h => h.split(' ')[0])).toEqual(['Skin', 'Preset', 'Mode', 'Palette', 'Your', 'Inline', 'Calm', 'Icons', 'Tables', 'Tool', 'Your', 'Backdrop', 'Your'])
-  // Who draws your prompt sits with the other switches, before your looks.
-  expect(headings.findIndex(h => h.startsWith('Your bubble'))).toBe(headings.findIndex(h => h.startsWith('Tool')) + 1)
-  // The presets sit on two shelves under one heading.
+  expect(await headings()).toEqual(['Skin', 'Preset', 'Mode', 'Palette'])
+
+  await ui.press({ key: 'tab-colours' })
+  expect(await headings()).toEqual(['Your', 'Inline', 'Your'])
+  await ui.press({ key: 'tab-details' })
+  expect(await headings()).toEqual(['Calm', 'Icons', 'Tables', 'Tool', 'Your', 'Backdrop'])
+  await ui.press({ key: 'tab-look' })
+  // The presets sit on three shelves under one heading.
   const captions = (await ui.findAll({ type: 'Text' })).filter(t => t.props.size === 'caption').map(t => t.text)
 
   expect(captions.map(c => c.split(' ')[0])).toEqual(['E-reader', 'VS', 'Accessibility'])
@@ -364,12 +370,17 @@ test('a look saved by name comes back as one press, and can be forgotten', async
   const ui = await $.ui.mount(PANE)
 
   // The name goes in the panel's own field; Enter saves it.
+  await ui.press({ key: 'tab-colours' })
   await ui.input({ key: 'look-name', text: 'night-work' })
   expect(Object.keys(sane(w.kept.get(SETTINGS_KEY)).looks)).toEqual(['night-work'])
+  await ui.press({ key: 'tab-look' })
+  // The presets sit on three shelves under one heading.
+  const captions = (await ui.findAll({ type: 'Text' })).filter(t => t.props.size === 'caption').map(t => t.text)
   await ui.press({ key: 'preset-paper' })
   await ui.press({ key: 'mode-light' })
   expect(sane(w.kept.get(SETTINGS_KEY)).preset).toBe('paper')
 
+  await ui.press({ key: 'tab-colours' })
   await ui.press({ key: 'look-night-work' })
   const back = sane(w.kept.get(SETTINGS_KEY))
 
@@ -482,6 +493,7 @@ test('the panel has calm, icons and the text table style as buttons', async ($, 
   await $.session.start(START)
   const ui = await $.ui.mount(PANE)
 
+  await ui.press({ key: 'tab-details' })
   await ui.press({ key: 'calm-on' })
   await ui.press({ key: 'icons-ascii' })
   await ui.press({ key: 'tables-text' })
@@ -497,6 +509,7 @@ test('any colour typed in the panel is kept, and a bad one is refused under the 
   await $.session.start(START)
   const ui = await $.ui.mount(PANE)
 
+  await ui.press({ key: 'tab-colours' })
   await ui.input({ key: 'color-you', text: '#123abc' })
   expect(sane(w.kept.get(SETTINGS_KEY)).colors.you).toBe('#123abc')
 
@@ -507,4 +520,27 @@ test('any colour typed in the panel is kept, and a bad one is refused under the 
   await ui.input({ key: 'look-name', text: 'nord' })
   expect(Object.keys(sane(w.kept.get(SETTINGS_KEY)).looks)).toEqual([])
   expect((await ui.findAll({ type: 'Text' })).some(t => t.text.includes("is a preset's name"))).toBe(true)
+})
+
+test('the panel is three tabs: the look first, then colours, then the details', async ($, on) => {
+  world(on)
+
+  await $.session.start(START)
+  const ui = await $.ui.mount(PANE)
+  const has = async (key: string) => (await ui.find({ type: 'Button', key })) !== undefined
+  const only = async (present: string[], absent: string[]) => {
+    for (const key of present) expect(await has(key), `${key} shown`).toBe(true)
+    for (const key of absent) expect(await has(key), `${key} hidden`).toBe(false)
+  }
+
+  expect((await ui.find({ type: 'Button', key: 'tab-look' }))?.props.variant).toBe('primary')
+  await only(['tab-colours', 'tab-details', 'skin-off', 'preset-nord', 'mode-auto'], ['calm-on', 'you-plum', 'backdrop-glow', 'look-x'])
+
+  await ui.press({ key: 'tab-details' })
+  expect((await ui.find({ type: 'Button', key: 'tab-details' }))?.props.variant).toBe('primary')
+  await only(['calm-on', 'icons-ascii', 'tables-text', 'tools-on', 'bubble-app', 'backdrop-glow'], ['preset-nord', 'you-plum'])
+
+  await ui.press({ key: 'tab-colours' })
+  await only(['you-plum', 'code-teal'], ['preset-nord', 'calm-on'])
+  // A press on a tab never changes a setting.
 })

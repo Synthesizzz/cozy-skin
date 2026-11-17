@@ -40,9 +40,9 @@ declare module 'claude-code' {
       // The minute the prompt rows last read the clock, so their "5 minutes
       // ago" redraws once a minute without redrawing anything else.
       minute: number
-      // What is typed in the panel's look-name and colour fields, and what the
-      // panel said of it (a refused name or colour).
-      draft: { look: string; you: string; code: string; note: string }
+      // What is typed in the panel's look-name and colour fields, what the panel
+      // said of it (a refused name or colour), and the tab showing.
+      draft: { look: string; you: string; code: string; note: string; tab: 'look' | 'colours' | 'details' }
       // The id of the main loop's running turn, for a calm spinner's one word.
       turn: { id: string }
     }

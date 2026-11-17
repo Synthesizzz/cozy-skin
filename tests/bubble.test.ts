@@ -77,6 +77,7 @@ test('the panel switches between the cozy bubble and the app bubble', async ($, 
     props: { title: 'cozy-skin', isFocused: true, bodyColumns: 60, placement: 'dock', scroll: { offset: 0, bodyRows: 40 }, view: {} },
   } as never)
 
+  await ui.press({ key: 'tab-details' })
   await ui.press({ key: 'bubble-app' })
   expect(sane(kept.get(SETTINGS_KEY)).bubble).toBe('app')
   await ui.press({ key: 'bubble-cozy' })
