@@ -34,7 +34,7 @@ export const wantsBackdrop = (settings: Settings): boolean =>
   settings.enabled && settings.mode === 'auto' && settings.backdrop === 'paper'
 
 // The glow, while it stands, takes the place of the still paper.
-const wantsAny = (settings: Settings, mode: Mode): boolean => wantsBackdrop(settings) || wantsGlow(settings, mode)
+const wantsAny = (settings: Settings, mode: Mode): boolean => wantsBackdrop(settings) || wantsGlow(settings)
 
 // The glow's phase, kept so the drawing follows the turn: the write redraws it.
 const glowAtom = atom({ plugin: 'cozy-skin', key: 'glow' } as const, { phase: 'idle' as GlowPhase })
@@ -58,7 +58,7 @@ type GlowEndHook = Hook<'turn.complete'>
 export async function glowStart($: EngineInterface, e: { agentId?: string }): Promise<void> {
   const live = await read($, settingsAtom)
 
-  if (e.agentId === undefined && wantsGlow(live.settings, live.mode)) {
+  if (e.agentId === undefined && wantsGlow(live.settings)) {
     settleTimer?.cancel()
     settleTimer = undefined
     await moveGlow($, 'start')
@@ -68,7 +68,7 @@ export async function glowStart($: EngineInterface, e: { agentId?: string }): Pr
 export const glowEnd: GlowEndHook = async ($, e, next) => {
   const live = await read($, settingsAtom)
 
-  if (e.agentId === undefined && wantsGlow(live.settings, live.mode)) {
+  if (e.agentId === undefined && wantsGlow(live.settings)) {
     await moveGlow($, e.reason === 'answer' ? 'answer' : e.reason)
     if (e.reason === 'answer') {
       settleTimer?.cancel()
@@ -87,10 +87,17 @@ export function paperOf(settings: Settings, mode: Mode): string {
 // The panels frost in the paper itself, so the app's sidebar and prompt sit on
 // the same tone a little denser; the scheme says which mode the paper is.
 export function backdropArgs(settings: Settings, mode: Mode): ThemeSetArgs {
-  if (wantsGlow(settings, mode)) {
-    return { backdrop: { scene: GLOW_SCENE, glass: { tint: '#f4ecd8', opacity: GLASS_OPACITY } }, overrideColorScheme: mode }
+  if (wantsGlow(settings)) {
+    return { backdrop: { scene: GLOW_SCENE, glass: { tint: paperOf(settings, mode), opacity: GLASS_OPACITY } }, overrideColorScheme: mode }
   }
   return { backdrop: { scene: BACKDROP_ID, glass: { tint: paperOf(settings, mode), opacity: GLASS_OPACITY } }, overrideColorScheme: mode }
+}
+
+// The glows take the preset's accent in the mode shown.
+function accentOf(settings: Settings, mode: Mode): string {
+  const preset = presetOf(settings.preset) ?? PRESETS[0]
+
+  return preset === undefined ? '#e8b98a' : preset[mode].palette.accent
 }
 
 function messageOf(error: unknown): string {
@@ -152,8 +159,9 @@ export const drawBackdrop: DrawBackdropHook = async ($, e, next) => {
   if (e.props.plugin === 'cozy-skin' && e.props.scene === GLOW_SCENE && e.surface === 'desktop') {
     const { Svg } = $.ui.resolve(e)
     const { phase } = await read($, glowAtom)
+    const { settings, mode } = await read($, settingsAtom)
 
-    return <Svg alt="Warm glows drifting on sepia paper" isInteractive source={glowSvg(phase)} />
+    return <Svg alt="Soft glows drifting on the preset paper" isInteractive source={glowSvg(phase, paperOf(settings, mode), accentOf(settings, mode))} />
   }
   if (e.props.plugin !== 'cozy-skin' || e.props.scene !== BACKDROP_ID) {
     return next(e)

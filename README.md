@@ -33,8 +33,7 @@ Before uninstalling, run `/cozy off` to get your Claude Code theme back.
 | `/cozy panel` | Click-to-change panel |
 | `/cozy <preset> [light\|dark\|auto]` | Pick a preset, and optionally the mode |
 | `/cozy light` · `dark` · `auto` | Mode (`auto` follows Windows) |
-| `/cozy backdrop paper` · `off` | Preset paper behind the whole desktop window, in mode `auto` (needs Claude Code 2.1.323 or newer) |
-| `/cozy themes` · `sepia-glow` · `off` | List the moving themes, or turn one on: sepia paper with warm glows that drift, move faster while Claude works and sparkle when a turn is done. Desktop, light mode `auto` (needs Claude Code 2.1.323 or newer) |
+| `/cozy backdrop paper` · `glow` · `off` | The preset's paper behind the whole desktop window, in mode `auto` (needs Claude Code 2.1.323 or newer). `glow` adds soft glows in the preset's accent that drift at the sides, move faster while Claude works and sparkle when a turn is done. Also `/cozy themes glow` · `off`, and `/cozy themes` to list |
 | `/cozy on` · `off` | Turn the skin on or off (`off` restores your theme) |
 | `/cozy color you\|code <name>\|#rrggbb\|off` | Colour of your text or of inline code |
 | `/cozy tables box\|text\|off` | Table style |

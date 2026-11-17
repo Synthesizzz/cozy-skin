@@ -2,6 +2,10 @@
 
 Newest first. Versions are the plugin's (`.claude-plugin/plugin.json`).
 
+## 0.11.2 (2026-11-17)
+
+- The glow is part of the Backdrop and takes the preset's colours: the paper is the preset's, the glows are its accent, in light and in dark. `/cozy backdrop glow` (also `/cozy themes glow`) and a glow button beside paper in the panel, which no longer has a Themes group. A `sepia-glow` set by 0.11.0 or 0.11.1 is read as glow. Like the paper, it is drawn in mode `auto` only.
+
 ## 0.11.1 (2026-11-17)
 
 - The `/cozy` panel has a Themes group on the desktop: off and sepia-glow.

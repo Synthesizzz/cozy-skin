@@ -1,6 +1,6 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
-import { applyTheme, describe, parseTheme, themesLine } from './command'
+import { applyTheme, backdropLine, describe, parseTheme } from './command'
 import { readWindowsLight, resolveMode } from './mode'
 import { panelPaper, repaintPanel } from './panel-paper'
 import { backdropNote, drawBackdrop, forgetBackdrop, glowEnd, glowStart, syncBackdrop } from './backdrop'
@@ -193,8 +193,14 @@ async function runCozy($: EngineInterface, args: string): Promise<{ text: string
   }
   if (action.kind === 'themes' && action.themes === undefined) {
     const live = await read($, settingsAtom)
+    const note = await backdropNote($).catch(() => undefined)
 
-    return { text: ['Themes: sepia-glow (sepia paper with warm glows that drift, move faster while Claude works and sparkle when a turn is done; light mode, mode auto)', themesLine(live.settings, live.mode)].join('\n') }
+    return {
+      text: [
+        'Themes: glow, the preset paper with soft glows in its accent that drift at the sides, move faster while Claude works and sparkle when a turn is done (/cozy themes glow|off, or /cozy backdrop glow).',
+        backdropLine(live.settings, note ?? { isDrawn: false, reason: null, isSet: false }),
+      ].join('\n'),
+    }
   }
   if (action.kind === 'terminal-install') {
     return { text: await installFragment($, PRESETS) }
@@ -260,7 +266,7 @@ export const register: Register = on => {
         name: COMMAND,
         description: 'Switch the cozy-skin preset, mode, text colours and table style (/cozy panel to click)',
         argumentHint:
-          '[<preset> | light | dark | auto | on | off | panel | color you|code <name>|#rrggbb|off | save|look|forget <name> | calm on|off | icons unicode|ascii | tables box|text|off | tools on|off | bubble cozy|app | backdrop off|paper | themes [sepia-glow|off] | terminal install]',
+          '[<preset> | light | dark | auto | on | off | panel | color you|code <name>|#rrggbb|off | save|look|forget <name> | calm on|off | icons unicode|ascii | tables box|text|off | tools on|off | bubble cozy|app | backdrop off|paper|glow | themes [glow|off] | terminal install]',
       })
     } catch {
       // The skin still draws: only the command is missing.

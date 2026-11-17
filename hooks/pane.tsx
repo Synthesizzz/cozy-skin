@@ -6,7 +6,7 @@ import { atom, read } from 'claude-code'
 import type { MatchedHook, RenderChildren } from 'claude-code'
 import { backdropNote } from './backdrop'
 import { NAMED, isHex, resolveColor } from './colors'
-import { backdropLine, themesLine } from './command'
+import { backdropLine } from './command'
 import { readable } from './contrast'
 import { PRESETS, presetOf } from './presets'
 import type { Palette } from './presets'
@@ -347,22 +347,11 @@ export async function drawPane($: Parameters<DrawPaneHook>[0], e: Parameters<Dra
             [
               pick('backdrop-off', 'off', settings.backdrop === 'off', 'backdrop off'),
               pick('backdrop-paper', 'paper', settings.backdrop === 'paper', 'backdrop paper'),
+              pick('backdrop-glow', 'glow', settings.backdrop === 'glow', 'backdrop glow'),
             ],
             settings.backdrop === 'off'
-              ? "The whole window on the preset's paper, the app's sidebar and prompt frosted over it. Drawn in mode auto only, where the app's own text follows Windows as the paper does."
-              : backdropLine(settings, drawn ?? { isDrawn: false, reason: null, isSet: false }).replace(/^Backdrop: paper /, 'Paper '),
-          )}
-      {e.surface !== 'desktop'
-        ? null
-        : group(
-            'Themes',
-            [
-              pick('themes-off', 'off', settings.themes === 'off', 'themes off'),
-              pick('themes-sepia-glow', 'sepia-glow', settings.themes === 'sepia-glow', 'themes sepia-glow'),
-            ],
-            settings.themes === 'off'
-              ? 'Sepia paper with warm glows that drift at the sides, move faster while Claude works and sparkle when a turn is done. Mode auto, while Windows is light.'
-              : themesLine(settings, mode).replace(/^Theme: /, ''),
+              ? "The whole window on the preset's paper, the app's sidebar and prompt frosted over it. Glow adds soft glows in the preset's accent that drift at the sides, move faster while Claude works and sparkle when a turn is done. Drawn in mode auto only, where the app's own text follows Windows as the paper does."
+              : backdropLine(settings, drawn ?? { isDrawn: false, reason: null, isSet: false }).replace(/^Backdrop: (paper|glow) /, (_, kind: string) => `${kind[0]?.toUpperCase()}${kind.slice(1)} `),
           )}
       {group(
         'Your looks',
