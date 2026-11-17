@@ -10,7 +10,9 @@
 // clears at session start or on a reload.
 
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, MatchedHook, ThemeSetArgs } from 'claude-code'
+import type { EngineInterface, Hook, MatchedHook, ThemeSetArgs, Timer } from 'claude-code'
+import { GLOW_SCENE, SPARKLE_MS, glowSvg, nextPhase, wantsGlow } from './glow'
+import type { GlowEvent, GlowPhase } from './glow'
 import { PRESETS, presetOf } from './presets'
 import type { Mode } from './presets'
 import { BACKDROP_NOTE_INIT, LIVE_INIT } from './settings'
@@ -31,6 +33,51 @@ const GLASS_OPACITY = 0.7
 export const wantsBackdrop = (settings: Settings): boolean =>
   settings.enabled && settings.mode === 'auto' && settings.backdrop === 'paper'
 
+// The glow, while it stands, takes the place of the still paper.
+const wantsAny = (settings: Settings, mode: Mode): boolean => wantsBackdrop(settings) || wantsGlow(settings, mode)
+
+// The glow's phase, kept so the drawing follows the turn: the write redraws it.
+const glowAtom = atom({ plugin: 'cozy-skin', key: 'glow' } as const, { phase: 'idle' as GlowPhase })
+
+// The one timer that ends a sparkle; a reload drops it and the next turn starts over.
+let settleTimer: Timer | undefined
+
+async function moveGlow($: EngineInterface, event: GlowEvent): Promise<void> {
+  const { phase } = await read($, glowAtom)
+  const next = nextPhase(phase, event)
+
+  if (next !== phase) {
+    await update($, glowAtom, () => ({ phase: next }))
+  }
+}
+
+type GlowEndHook = Hook<'turn.complete'>
+
+// Only the main loop's turn moves the glow, and only while a glow stands. The
+// start is called from the one turn.start hook, which an event allows once.
+export async function glowStart($: EngineInterface, e: { agentId?: string }): Promise<void> {
+  const live = await read($, settingsAtom)
+
+  if (e.agentId === undefined && wantsGlow(live.settings, live.mode)) {
+    settleTimer?.cancel()
+    settleTimer = undefined
+    await moveGlow($, 'start')
+  }
+}
+
+export const glowEnd: GlowEndHook = async ($, e, next) => {
+  const live = await read($, settingsAtom)
+
+  if (e.agentId === undefined && wantsGlow(live.settings, live.mode)) {
+    await moveGlow($, e.reason === 'answer' ? 'answer' : e.reason)
+    if (e.reason === 'answer') {
+      settleTimer?.cancel()
+      settleTimer = $.clock.after(SPARKLE_MS, () => void moveGlow($, 'settle').catch(() => undefined))
+    }
+  }
+  return next(e)
+}
+
 export function paperOf(settings: Settings, mode: Mode): string {
   const preset = presetOf(settings.preset) ?? PRESETS[0]
 
@@ -40,6 +87,9 @@ export function paperOf(settings: Settings, mode: Mode): string {
 // The panels frost in the paper itself, so the app's sidebar and prompt sit on
 // the same tone a little denser; the scheme says which mode the paper is.
 export function backdropArgs(settings: Settings, mode: Mode): ThemeSetArgs {
+  if (wantsGlow(settings, mode)) {
+    return { backdrop: { scene: GLOW_SCENE, glass: { tint: '#f4ecd8', opacity: GLASS_OPACITY } }, overrideColorScheme: mode }
+  }
   return { backdrop: { scene: BACKDROP_ID, glass: { tint: paperOf(settings, mode), opacity: GLASS_OPACITY } }, overrideColorScheme: mode }
 }
 
@@ -69,7 +119,7 @@ export function forgetBackdrop($: EngineInterface): Promise<BackdropNote> {
 export async function syncBackdrop($: EngineInterface, settings: Settings, mode: Mode, isAsked: boolean): Promise<BackdropNote> {
   const before = await read($, noteAtom).catch(() => BACKDROP_NOTE_INIT)
 
-  if (wantsBackdrop(settings)) {
+  if (wantsAny(settings, mode)) {
     try {
       const result = await $.theme.set(backdropArgs(settings, mode))
 
@@ -99,6 +149,12 @@ type DrawBackdropHook = MatchedHook<'ui.render', { component: 'Backdrop' }>
 // Cozy's backdrop is one sheet of the preset's paper over the whole window;
 // another plugin's is left to that plugin.
 export const drawBackdrop: DrawBackdropHook = async ($, e, next) => {
+  if (e.props.plugin === 'cozy-skin' && e.props.scene === GLOW_SCENE && e.surface === 'desktop') {
+    const { Svg } = $.ui.resolve(e)
+    const { phase } = await read($, glowAtom)
+
+    return <Svg alt="Warm glows drifting on sepia paper" isInteractive source={glowSvg(phase)} />
+  }
   if (e.props.plugin !== 'cozy-skin' || e.props.scene !== BACKDROP_ID) {
     return next(e)
   }

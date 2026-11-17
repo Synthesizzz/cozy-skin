@@ -16,6 +16,7 @@ export type ThemeAction =
   | { kind: 'tools'; tools: 'on' | 'off' }
   | { kind: 'bubble'; bubble: 'cozy' | 'app' }
   | { kind: 'backdrop'; backdrop: 'off' | 'paper' }
+  | { kind: 'themes'; themes?: 'off' | 'sepia-glow' }
   | { kind: 'terminal-install' }
   | { kind: 'panel' }
   | { kind: 'color'; side: Side; color: string | null }
@@ -27,7 +28,7 @@ export type ThemeAction =
 const names = () => PRESETS.map(preset => preset.name).join(', ')
 
 const USAGE =
-  'Use: /cozy [<preset> [light|dark|auto] | light | dark | auto | on | off | calm on|off | icons unicode|ascii | tables box|text|off | tools on|off | bubble cozy|app | backdrop off|paper | color you|code <name>|#rrggbb|off | save|look|forget <name> | panel | terminal install]'
+  'Use: /cozy [<preset> [light|dark|auto] | light | dark | auto | on | off | calm on|off | icons unicode|ascii | tables box|text|off | tools on|off | bubble cozy|app | backdrop off|paper | themes [sepia-glow|off] | color you|code <name>|#rrggbb|off | save|look|forget <name> | panel | terminal install]'
 
 const SIDES: Record<string, Side> = { you: 'you', me: 'you', code: 'code' }
 
@@ -66,6 +67,12 @@ export function parseTheme(args: string): ThemeAction {
   if (head === 'backdrop' && (arg === 'off' || arg === 'paper') && rest.length === 0) {
     return { kind: 'backdrop', backdrop: arg }
   }
+  if (head === 'themes' && arg === undefined) {
+    return { kind: 'themes' }
+  }
+  if (head === 'themes' && (arg === 'sepia-glow' || arg === 'off') && rest.length === 0) {
+    return { kind: 'themes', themes: arg }
+  }
   if ((head === 'save' || head === 'look' || head === 'forget') && arg !== undefined && rest.length === 0) {
     if (!LOOK_NAME.test(arg)) {
       return fail(`"${arg}" is not a look name: use lowercase letters, digits and dashes, up to 24.`)
@@ -99,7 +106,7 @@ export function parseTheme(args: string): ThemeAction {
   if ((arg === 'light' || arg === 'dark' || arg === 'auto') && rest.length === 0 && presetOf(head) !== undefined) {
     return { kind: 'preset', name: head, mode: arg }
   }
-  if (['calm', 'icons', 'tables', 'tools', 'bubble', 'backdrop', 'terminal', 'color', 'colour', 'save', 'look', 'forget'].includes(head)) {
+  if (['calm', 'icons', 'tables', 'tools', 'bubble', 'backdrop', 'themes', 'terminal', 'color', 'colour', 'save', 'look', 'forget'].includes(head)) {
     return fail(`Bad value for "${head}".`)
   }
 
@@ -129,6 +136,8 @@ export function applyTheme(settings: Settings, action: ThemeAction): Settings {
       return { ...settings, bubble: action.bubble }
     case 'backdrop':
       return { ...settings, backdrop: action.backdrop }
+    case 'themes':
+      return action.themes === undefined ? settings : { ...settings, themes: action.themes }
     case 'color':
       return { ...settings, colors: { ...settings.colors, [action.side]: action.color } }
     case 'save': {
@@ -174,6 +183,20 @@ export function backdropLine(settings: Settings, note: BackdropNote): string {
   return `Backdrop: paper (not drawn: ${note.reason ?? 'the app has not answered yet'})`
 }
 
+// The moving themes /cozy knows and which one is on.
+export function themesLine(settings: Settings, mode: Mode): string {
+  if (settings.themes === 'off') {
+    return 'Theme: off (sepia-glow: /cozy themes sepia-glow)'
+  }
+  if (!settings.enabled) {
+    return 'Theme: sepia-glow (not drawn while cozy-skin is off)'
+  }
+  if (settings.mode !== 'auto' || mode !== 'light') {
+    return 'Theme: sepia-glow (waits for mode auto in light: the app\'s own text follows Windows, so the paper does too)'
+  }
+  return 'Theme: sepia-glow (on)'
+}
+
 export function describe(settings: Settings, mode: Mode, note: BackdropNote = { isDrawn: false, reason: null, isSet: false }): string {
   const lines = [
     settings.enabled ? 'cozy-skin is on.' : 'cozy-skin is off. /cozy on, or pick a preset or a mode, turns it on.',
@@ -185,6 +208,7 @@ export function describe(settings: Settings, mode: Mode, note: BackdropNote = { 
     `Tool rows: ${settings.tools}`,
     `Your bubble: ${settings.bubble}${settings.bubble === 'app' ? " (Claude Code's own, with Rewind and selection)" : ''}`,
     backdropLine(settings, note),
+    themesLine(settings, mode),
     `Your text: ${settings.colors.you ?? 'preset'}, inline code: ${settings.colors.code ?? 'preset'}`,
     `Your looks: ${Object.keys(settings.looks).join(', ') || 'none (/cozy save <name>)'}`,
   ]

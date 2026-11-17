@@ -18,6 +18,9 @@ export type Settings = {
   // app's panels frosted over it, or the app's own. Drawn in mode auto only
   // (see wantsBackdrop in backdrop.tsx).
   backdrop: 'off' | 'paper'
+  // A moving theme behind the window (see glow.ts); it takes the place of
+  // the still paper while it stands.
+  themes: 'off' | 'sepia-glow'
   enabled: boolean
   // Claude Code's own theme before cozy-skin first changed it; null until the
   // first `/cozy <preset>` or `/cozy <mode>`, and again after `/cozy off`.
@@ -62,6 +65,7 @@ export const DEFAULTS: Settings = {
   tools: 'on',
   bubble: 'cozy',
   backdrop: 'off',
+  themes: 'off',
   enabled: true,
   savedTheme: null,
   appliedTheme: null,
@@ -93,6 +97,7 @@ export function sane(raw: unknown): Settings {
     tools: pick(o.tools, ['on', 'off'], DEFAULTS.tools),
     bubble: pick(o.bubble, ['cozy', 'app'], DEFAULTS.bubble),
     backdrop: pick(o.backdrop, ['off', 'paper'], DEFAULTS.backdrop),
+    themes: pick(o.themes, ['off', 'sepia-glow'], DEFAULTS.themes),
     enabled: typeof o.enabled === 'boolean' ? o.enabled : DEFAULTS.enabled,
     savedTheme: typeof o.savedTheme === 'string' ? o.savedTheme : null,
     appliedTheme: typeof o.appliedTheme === 'string' ? o.appliedTheme : null,

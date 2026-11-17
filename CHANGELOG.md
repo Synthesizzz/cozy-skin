@@ -2,6 +2,12 @@
 
 Newest first. Versions are the plugin's (`.claude-plugin/plugin.json`).
 
+## 0.11.0 (2026-11-17)
+
+- `/cozy themes sepia-glow|off`, and `/cozy themes` to list them: the first moving theme. On the desktop, in mode `auto` while Windows is light, the window is sepia paper with two or three soft warm glows drifting at its sides, which leave the chat column clear. The glows move about three times faster while Claude works, and twinkle for about three seconds when a turn is answered. Off by default. Only the main conversation's turn moves it, not a subagent's. It takes the place of `/cozy backdrop paper` while it is on, and needs Claude Code 2.1.323 or newer.
+- Not yet seen on the desktop: whether the app plays the drawing's animation. If it does not, the glows stand still on the paper.
+- `/cozy backdrop paper` needs 2.1.323, not 2.1.322 as 0.10.0 said: 2.1.322 does not take the theme call 0.10.0 makes.
+
 ## 0.10.0 (2026-11-17)
 
 - `/cozy backdrop paper|off`: in mode `auto`, the preset's paper is drawn behind the whole desktop window, so the window is paper-toned and not only the chat. Off by default, because it uses an early-access API of Claude Code 2.1.322 or newer that the app may not draw yet: `/cozy` says whether it is drawn and, when not, why. Modes `light` and `dark` leave the window alone, since the app's own text colour would not match the paper.

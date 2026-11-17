@@ -1,9 +1,9 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
-import { applyTheme, describe, parseTheme } from './command'
+import { applyTheme, describe, parseTheme, themesLine } from './command'
 import { readWindowsLight, resolveMode } from './mode'
 import { panelPaper, repaintPanel } from './panel-paper'
-import { backdropNote, drawBackdrop, forgetBackdrop, syncBackdrop } from './backdrop'
+import { backdropNote, drawBackdrop, forgetBackdrop, glowEnd, glowStart, syncBackdrop } from './backdrop'
 import { PRESETS } from './presets'
 import type { Mode } from './presets'
 import { LIVE_INIT, SETTINGS_KEY, sane } from './settings'
@@ -191,6 +191,11 @@ async function runCozy($: EngineInterface, args: string): Promise<{ text: string
 
     return { text: [describe(live.settings, live.mode, note), hintFor(live.settings, live.mode)].filter(Boolean).join('\n') }
   }
+  if (action.kind === 'themes' && action.themes === undefined) {
+    const live = await read($, settingsAtom)
+
+    return { text: ['Themes: sepia-glow (sepia paper with warm glows that drift, move faster while Claude works and sparkle when a turn is done; light mode, mode auto)', themesLine(live.settings, live.mode)].join('\n') }
+  }
   if (action.kind === 'terminal-install') {
     return { text: await installFragment($, PRESETS) }
   }
@@ -255,7 +260,7 @@ export const register: Register = on => {
         name: COMMAND,
         description: 'Switch the cozy-skin preset, mode, text colours and table style (/cozy panel to click)',
         argumentHint:
-          '[<preset> | light | dark | auto | on | off | panel | color you|code <name>|#rrggbb|off | save|look|forget <name> | calm on|off | icons unicode|ascii | tables box|text|off | tools on|off | bubble cozy|app | backdrop off|paper | terminal install]',
+          '[<preset> | light | dark | auto | on | off | panel | color you|code <name>|#rrggbb|off | save|look|forget <name> | calm on|off | icons unicode|ascii | tables box|text|off | tools on|off | bubble cozy|app | backdrop off|paper | themes [sepia-glow|off] | terminal install]',
       })
     } catch {
       // The skin still draws: only the command is missing.
@@ -380,7 +385,12 @@ export const register: Register = on => {
   on('ui.render', { component: 'UserMessage' }, drawPrompt).catch((_, e, next) => next(e))
 
   // The spinner and the turn footer say the preset's words. A failure leaves the row as the engine draws it.
-  on('turn.start', trackTurn).catch(($, e, next) => (next.called ? undefined : next(e)))
+  // The moving theme follows the main turn: work on its start, a sparkle on its answer.
+  on('turn.complete', glowEnd).catch(($, e, next) => (next.called ? undefined : next(e)))
+  on('turn.start', async ($, e, next) => {
+    await glowStart($, e).catch(() => undefined)
+    return trackTurn($, e, next)
+  }).catch(($, e, next) => (next.called ? undefined : next(e)))
   on('ui.render', { component: 'Spinner' }, drawSpinner).catch(($, e, next) => (next.called ? undefined : next(e)))
   on('ui.render', { component: 'TurnDuration' }, drawDone).catch(($, e, next) => (next.called ? undefined : next(e)))
 

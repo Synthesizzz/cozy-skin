@@ -15,6 +15,7 @@ declare module 'claude-code' {
           tools: 'on' | 'off'
           bubble: 'cozy' | 'app'
           backdrop: 'off' | 'paper'
+          themes: 'off' | 'sepia-glow'
           enabled: boolean
           savedTheme: string | null
           appliedTheme: string | null
@@ -25,6 +26,8 @@ declare module 'claude-code' {
       }
       // What the app last answered about cozy's backdrop (see BackdropNote in hooks/settings.ts).
       backdrop: { isDrawn: boolean; reason: string | null; isSet: boolean }
+      // What the moving theme is doing: still, working with Claude, or a sparkle after an answer.
+      glow: { phase: 'idle' | 'working' | 'sparkle' }
       // What each table's buttons last said, by `<message id>:<table number>`.
       notes: Record<string, { text: string; isError: boolean }>
       // Long tables shown in full, by `<message id>:<table number>`.
