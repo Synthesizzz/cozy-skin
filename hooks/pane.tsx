@@ -137,7 +137,9 @@ export type Choose = (args: string) => Promise<unknown>
 // whole app in the preset's palette of that mode (see fixed-look.ts).
 export function modeNote(setting: Mode | 'auto', mode: Mode, surface: string): string | undefined {
   if (setting === 'auto') {
-    return `Follows the app's own light or dark theme (now ${mode}).`
+    return surface === 'desktop'
+      ? `Follows the app's own light or dark, in the preset's palette (now ${mode}).`
+      : `Follows the app's own light or dark theme (now ${mode}).`
   }
   return surface === 'desktop' ? `The whole app in the preset's ${setting} palette.` : undefined
 }

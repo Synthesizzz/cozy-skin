@@ -159,17 +159,18 @@ test('a session that starts with the glow in a fixed mode sets the look with no 
   expect(w.last()).toEqual({ colors: fixedLook('kindle', 'dark')!.colors })
 })
 
-test('/cozy themes glow sets it, and off clears it', async ($, on) => {
+test('/cozy themes glow sets it, and off leaves the look without it', async ($, on) => {
   const w = world(on, { mode: 'auto' })
 
   await $.session.start(START)
-  expect(w.calls).toEqual([])
+  expect((w.last() as ThemeSetArgs).backdrop).toBeUndefined()
   const turnedOn = { text: await press($, 'themes glow') }
 
   expect((w.last() as ThemeSetArgs).backdrop).toMatchObject({ scene: GLOW_SCENE })
   expect(JSON.stringify(turnedOn)).toContain('Glow (')
   await press($, 'themes off')
-  expect(w.last()).toBe('clear')
+  expect((w.last() as ThemeSetArgs).backdrop).toBeUndefined()
+  expect((w.last() as ThemeSetArgs).colors).toBeDefined()
 })
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

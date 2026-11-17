@@ -6,7 +6,9 @@
 
 import type { On, ThemeSetArgs } from 'claude-code'
 import { expect, test } from 'claude-code/testing'
-import { fixedLook } from '../hooks/fixed-look'
+import { autoLook, fixedLook } from '../hooks/fixed-look'
+import { checkColors } from '../hooks/make-colors.js'
+import { PRESETS } from '../hooks/presets'
 import { modeNote } from '../hooks/pane'
 import { SETTINGS_KEY, sane } from '../hooks/settings'
 import { press } from './press'
@@ -61,7 +63,7 @@ test("a fixed mode's look is the preset's palette of that mode, and auto goes ba
   await press($, 'auto')
   const back = w.last()
 
-  expect(back !== 'clear' && back?.colors).toBeFalsy()
+  expect(modesOf(back).sort()).toEqual(['dark', 'light'])
   expect(back !== 'clear' && back?.backdrop).toBeTruthy()
 })
 
@@ -84,9 +86,55 @@ test('a new preset in a fixed mode moves the look to its palette', async ($, on)
   expect(w.last()).toEqual({ colors: fixedLook('gruvbox', 'light')!.colors })
 })
 
+// Mode auto (Film, 2026-11-17): like the app's own default, it follows the
+// app's light or dark, and the whole app takes the preset's palette of the
+// mode shown, with the paper or glow behind it when the Backdrop is on.
+test('auto sends one look with both modes, and the preset tone in each', async ($, on) => {
+  const w = world(on, { mode: 'auto', preset: 'nord' })
+
+  await $.session.start(START)
+  const set = w.last()
+
+  expect(modesOf(set).sort()).toEqual(['dark', 'light'])
+  expect(set !== 'clear' && set?.colors).toEqual(autoLook('nord')!.colors)
+  expect(set !== 'clear' && set?.backdrop).toBeFalsy()
+})
+
+for (const backdrop of ['paper', 'glow'] as const) {
+  test(`auto with the ${backdrop} keeps it behind the preset tone`, async ($, on) => {
+    const w = world(on, { mode: 'auto', preset: 'nord', backdrop })
+
+    await $.session.start(START)
+    const set = w.last()
+
+    expect(modesOf(set).sort()).toEqual(['dark', 'light'])
+    expect(set !== 'clear' && set?.backdrop).toBeTruthy()
+  })
+}
+
+test('the auto look for every preset is one the desktop will paint', () => {
+  const bad: string[] = []
+
+  for (const preset of PRESETS) {
+    const made = autoLook(preset.name)
+
+    if (made === undefined) {
+      bad.push(`${preset.name}: none`)
+      continue
+    }
+    const fatal = [...made.problems, ...checkColors(made.colors)].filter(line => line.startsWith("Desktop won't paint"))
+
+    if (fatal.length > 0) {
+      bad.push(`${preset.name}: ${fatal[0]}`)
+    }
+  }
+  expect(bad).toEqual([])
+})
+
 test('the line under Mode says what each mode does on the desktop; the terminal keeps it short', () => {
   expect(modeNote('light', 'light', 'desktop')).toBe("The whole app in the preset's light palette.")
   expect(modeNote('dark', 'dark', 'desktop')).toBe("The whole app in the preset's dark palette.")
   expect(modeNote('light', 'light', 'terminal')).toBeUndefined()
-  expect(modeNote('auto', 'dark', 'desktop')).toBe("Follows the app's own light or dark theme (now dark).")
+  expect(modeNote('auto', 'dark', 'desktop')).toBe("Follows the app's own light or dark, in the preset's palette (now dark).")
+  expect(modeNote('auto', 'light', 'terminal')).toBe("Follows the app's own light or dark theme (now light).")
 })

@@ -37,7 +37,10 @@ const FATAL = "Desktop won't paint"
 
 export type FixedLook = { colors: ThemeColors; problems: string[] }
 
-function build(label: string, id: string, mode: Mode, p: { bg: string; fg: string; accent: string; err: string; ok: string; warn: string; mcp: string }, rung: Rung): FixedLook {
+type Paper = { bg: string; fg: string; accent: string; err: string; ok: string; warn: string; mcp: string }
+
+// One mode's half of a look, as `makeColors` takes it.
+function half(mode: Mode, p: Paper, rung: Rung) {
   const ink = mix(p.fg, mode === 'light' ? '#000000' : '#ffffff', rung.ink)
   // Cards, panels and menus over the page (look.md: in light mode each as light
   // or lighter, panels and menus alike; a dark surface-3 drifting light is what
@@ -46,33 +49,49 @@ function build(label: string, id: string, mode: Mode, p: { bg: string; fg: strin
     mode === 'light'
       ? { 'surface-1': mix(p.bg, '#ffffff', 0.25), 'surface-2': mix(p.bg, '#ffffff', 0.5), 'surface-3': mix(p.bg, '#ffffff', 0.5) }
       : { 'surface-1': mix(p.bg, ink, rung.step), 'surface-2': mix(p.bg, ink, rung.step * 2), 'surface-3': mix(p.bg, ink, rung.step * 3) }
-  const { theme, problems } = makeColors({
-    label,
-    id,
-    only: mode,
+
+  return {
     roles: { accent: p.accent, danger: p.err, success: p.ok, warning: p.warn, pro: p.mcp },
-    [mode]: {
-      gray: {
-        anchors: {
-          'surface-0': p.bg,
-          ...surfaces,
-          'text-primary': ink,
-          // From the ink toward the paper, so they keep the ramp's order: several
-          // presets' own muted ink sits right beside their ink.
-          'text-secondary': mix(ink, p.bg, rung.secondary),
-          'text-muted': mix(ink, p.bg, rung.muted),
-        },
+    gray: {
+      anchors: {
+        'surface-0': p.bg,
+        ...surfaces,
+        'text-primary': ink,
+        // From the ink toward the paper, so they keep the ramp's order: several
+        // presets' own muted ink sits right beside their ink.
+        'text-secondary': mix(ink, p.bg, rung.secondary),
+        'text-muted': mix(ink, p.bg, rung.muted),
       },
     },
-  })
+  }
+}
 
-  return { colors: theme, problems }
+const paints = (look: FixedLook): boolean => !look.problems.some(line => line.startsWith(FATAL))
+
+// The first rung whose one-mode look the desktop paints, with that look; else
+// the last rung that built, whose `problems` say why.
+function climb(label: string, id: string, mode: Mode, p: Paper): { rung: Rung; look: FixedLook } | undefined {
+  let last: { rung: Rung; look: FixedLook } | undefined
+
+  for (const rung of LADDER) {
+    try {
+      const { theme, problems } = makeColors({ label, id, only: mode, [mode]: half(mode, p, rung) })
+
+      last = { rung, look: { colors: theme, problems } }
+    } catch {
+      continue
+    }
+    if (paints(last.look)) {
+      break
+    }
+  }
+  return last
 }
 
 const made = new Map<string, FixedLook>()
 
-// The look for a preset in a mode: the first rung the desktop paints, else the
-// last rung tried, whose `problems` say why. Kept once worked out.
+// The look for a preset in mode light or dark: that mode alone (`only`), which
+// a surface paints whichever mode the app is in. Kept once worked out.
 export function fixedLook(presetName: string, mode: Mode): FixedLook | undefined {
   const preset = presetOf(presetName)
 
@@ -80,25 +99,43 @@ export function fixedLook(presetName: string, mode: Mode): FixedLook | undefined
     return undefined
   }
   const key = `${preset.name}-${mode}`
+  const kept = made.get(key) ?? climb(`cozy ${preset.label} ${mode}`, `cozy-${key}`, mode, preset[mode].palette)?.look
+
+  if (kept !== undefined) {
+    made.set(key, kept)
+  }
+  return kept
+}
+
+// The look for a preset in mode auto: both halves, each on the rung its own
+// mode needed, so the app's own light or dark picks which one shows, as the
+// app's default appearance does (Film, 2026-11-17).
+export function autoLook(presetName: string): FixedLook | undefined {
+  const preset = presetOf(presetName)
+
+  if (preset === undefined) {
+    return undefined
+  }
+  const key = `${preset.name}-auto`
   const kept = made.get(key)
 
   if (kept !== undefined) {
     return kept
   }
-  let last: FixedLook | undefined
+  const light = climb(`cozy ${preset.label} light`, `cozy-${preset.name}-light`, 'light', preset.light.palette)
+  const dark = climb(`cozy ${preset.label} dark`, `cozy-${preset.name}-dark`, 'dark', preset.dark.palette)
 
-  for (const rung of LADDER) {
-    try {
-      last = build(`cozy ${preset.label} ${mode}`, `cozy-${key}`, mode, preset[mode].palette, rung)
-    } catch {
-      continue
-    }
-    if (!last.problems.some(line => line.startsWith(FATAL))) {
-      break
-    }
+  if (light === undefined || dark === undefined) {
+    return undefined
   }
-  if (last !== undefined) {
-    made.set(key, last)
-  }
-  return last
+  const { theme, problems } = makeColors({
+    label: `cozy ${preset.label}`,
+    id: `cozy-${preset.name}`,
+    light: half('light', preset.light.palette, light.rung),
+    dark: half('dark', preset.dark.palette, dark.rung),
+  })
+  const look = { colors: theme, problems }
+
+  made.set(key, look)
+  return look
 }

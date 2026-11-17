@@ -69,14 +69,15 @@ test('the backdrop stands only for paper, the skin on and mode auto', () => {
   expect(wantsBackdrop({ ...on, mode: 'dark' })).toBe(false)
 })
 
-test("the app's panels frost in the preset's own paper, a raw colour, and the scheme is the mode", () => {
+test("the app's panels frost in the preset's own paper, a raw colour, over the preset's look in both modes", () => {
   for (const preset of PRESETS) {
     for (const mode of ['light', 'dark'] as const) {
       const args = backdropArgs(sane({ preset: preset.name, mode: 'auto', backdrop: 'paper' }), mode)
-      expect(Object.keys(args).sort()).toEqual(['backdrop', 'overrideColorScheme'])
+      // A look for both modes names no scheme: the app's own light or dark picks.
+      expect(Object.keys(args).sort()).toEqual(['backdrop', 'colors'])
+      expect(Object.keys(args.colors?.inputs ?? {}).sort()).toEqual(['dark', 'light'])
 
       expect((args.backdrop as { scene?: string } | undefined)?.scene).toBe(BACKDROP_ID)
-      expect(args.overrideColorScheme).toBe(mode)
       expect(tintOf(args)).toBe(preset[mode].palette.bg)
       expect(tintOf(args)).toMatch(/^#[0-9a-f]{6}$/i)
       expect(args.backdrop?.glass === false ? undefined : args.backdrop?.glass?.opacity).toBe(0.7)
@@ -91,10 +92,9 @@ test('a session that starts with paper in mode auto sets the backdrop', async ($
   expect(w.last()).toEqual(backdropArgs(sane({ mode: 'auto', backdrop: 'paper' }), 'dark'))
 })
 
-// With no paper wanted, a start makes no theme call, so another plugin's theme
-// stands. (A fixed mode sets the preset's look: tests/fixed-mode.test.ts.)
+// With the skin off, a start makes no theme call, so another plugin's theme
+// stands. (With it on, every mode sets the preset's look: tests/fixed-mode.test.ts.)
 for (const [why, stored] of [
-  ['the backdrop off', { mode: 'auto' }],
   ['the skin off', { mode: 'auto', backdrop: 'paper', enabled: false }],
 ] as const) {
   test(`a session that starts with ${why} makes no theme call`, async ($, on) => {
@@ -105,36 +105,37 @@ for (const [why, stored] of [
   })
 }
 
-test('/cozy backdrop paper sets it, says it is drawn, and off clears it', async ($, on) => {
+test('/cozy backdrop paper sets it, says it is drawn, and off leaves the look without it', async ($, on) => {
   const w = world(on, { mode: 'auto' })
 
   await $.session.start(START)
   const set = { text: await press($, 'backdrop paper') }
 
   expect(sane(w.kept.get(SETTINGS_KEY)).backdrop).toBe('paper')
-  expect(w.sets()).toHaveLength(1)
+  expect(tintOf(w.last())).toBeDefined()
   expect(set.text).toContain('Paper (drawn behind the window)')
 
-  const cleared = { text: await press($, 'backdrop off') }
+  const off = { text: await press($, 'backdrop off') }
+  const last = w.last()
 
   expect(sane(w.kept.get(SETTINGS_KEY)).backdrop).toBe('off')
-  expect(w.last()).toBe('clear')
-  expect(cleared.text).not.toContain('Paper (')
-
-  // Nothing of cozy's stands now: a later change clears nothing more.
-  await press($, 'calm on')
-  expect(w.calls.filter(c => c === 'clear')).toHaveLength(1)
+  expect(last !== 'clear' && last?.backdrop).toBeFalsy()
+  expect(last !== 'clear' && last?.colors).toBeTruthy()
+  expect(off.text).not.toContain('Paper (')
 })
 
-test("a /cozy change with no paper wanted never clears a theme cozy did not set", async ($, on) => {
+test('with the skin on no /cozy change clears the theme; turning the skin off clears the one cozy set', async ($, on) => {
   const w = world(on, { mode: 'auto' })
 
   await $.session.start(START)
-  // No fixed mode here: light or dark sets cozy's own look, which off may clear.
-  for (const args of ['calm on', 'nord', 'off', 'backdrop off']) {
+  for (const args of ['calm on', 'nord', 'backdrop off', 'light', 'auto']) {
     await press($, args)
   }
-  expect(w.calls).toEqual([])
+  expect(w.calls.filter(c => c === 'clear')).toEqual([])
+  await press($, 'off')
+  expect(w.last()).toBe('clear')
+  await press($, 'calm off')
+  expect(w.calls.filter(c => c === 'clear')).toHaveLength(1)
 })
 
 test("/cozy says why the app does not draw the backdrop, in the app's words", async ($, on) => {
@@ -220,7 +221,7 @@ test('the desktop panel has backdrop buttons, and the terminal panel has none', 
   expect((await ui.find({ type: 'Button', key: 'backdrop-off' }))?.props.variant).toBe('primary')
   await ui.press({ key: 'backdrop-paper' })
   expect(sane(w.kept.get(SETTINGS_KEY)).backdrop).toBe('paper')
-  expect(w.sets()).toHaveLength(1)
+  expect(tintOf(w.last())).toBeDefined()
   expect((await ui.find({ type: 'Button', key: 'backdrop-paper' }))?.props.variant).toBe('primary')
 
   const terminal = await $.ui.mount({ ...PANE, surface: 'terminal' })
