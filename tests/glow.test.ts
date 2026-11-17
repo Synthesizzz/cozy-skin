@@ -32,7 +32,7 @@ function world(on: On, stored: Record<string, unknown>, light = true) {
   on('turn.start', (_, e) => ({ turnId: e.turnId }))
   on('turn.complete', () => ({ text: '' }))
 
-  return { calls, last: () => calls[calls.length - 1] }
+  return { kept, calls, last: () => calls[calls.length - 1] }
 }
 
 declare function setTimeout(fn: (value: unknown) => void, ms: number): unknown
@@ -180,6 +180,32 @@ test('the glow is drawn as an Svg that follows the turn: working on a prompt, a 
   expect(await glowSource($)).toBe(glowSvg('working'))
   await $.turn.complete({ turnId: 'turn-1', reason: 'answer' } as never)
   expect(await glowSource($)).toBe(glowSvg('sparkle'))
+})
+
+const PANE = {
+  plugin: PLUGIN,
+  surface: 'desktop',
+  component: 'Pane',
+  requestId: 'cozy-skin',
+  props: { title: 'cozy-skin', isFocused: true, bodyColumns: 60, placement: 'dock', scroll: { offset: 0, bodyRows: 40 }, view: {} },
+} as const
+
+test('the desktop panel has Themes buttons, and the terminal panel has none', async ($, on) => {
+  const w = world(on, { mode: 'auto' })
+
+  await $.session.start(START)
+  const ui = await $.ui.mount(PANE)
+
+  expect((await ui.find({ type: 'Button', key: 'themes-off' }))?.props.variant).toBe('primary')
+  await ui.press({ key: 'themes-sepia-glow' })
+  expect(sane(w.kept.get(SETTINGS_KEY)).themes).toBe('sepia-glow')
+  expect((await ui.find({ type: 'Button', key: 'themes-sepia-glow' }))?.props.variant).toBe('primary')
+  await ui.press({ key: 'themes-off' })
+  expect(sane(w.kept.get(SETTINGS_KEY)).themes).toBe('off')
+
+  const terminal = await $.ui.mount({ ...PANE, surface: 'terminal' })
+
+  expect(await terminal.find({ type: 'Button', key: 'themes-sepia-glow' })).toBeUndefined()
 })
 
 test("a subagent's turn does not move the glow", async ($, on) => {

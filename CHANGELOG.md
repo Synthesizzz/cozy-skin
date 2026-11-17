@@ -2,6 +2,10 @@
 
 Newest first. Versions are the plugin's (`.claude-plugin/plugin.json`).
 
+## 0.11.1 (2026-11-17)
+
+- The `/cozy` panel has a Themes group on the desktop: off and sepia-glow.
+
 ## 0.11.0 (2026-11-17)
 
 - `/cozy themes sepia-glow|off`, and `/cozy themes` to list them: the first moving theme. On the desktop, in mode `auto` while Windows is light, the window is sepia paper with two or three soft warm glows drifting at its sides, which leave the chat column clear. The glows move about three times faster while Claude works, and twinkle for about three seconds when a turn is answered. Off by default. Only the main conversation's turn moves it, not a subagent's. It takes the place of `/cozy backdrop paper` while it is on, and needs Claude Code 2.1.323 or newer.
